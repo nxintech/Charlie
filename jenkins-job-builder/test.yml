@@ -2,12 +2,13 @@
 - builder:
     name: deploy
     builders:
-     - shell: "ssh root@{hostname} {deploy_script}"
-
+     - shell: "ssh root@hostname /data0/script/deploy.sh"
 - builder:
-    name: gradle_build
+    name: gradle
     builders:
-     - gradle: 
+      - gradle:
+          root-build-script-dir: ${workspace}
+          tasks: clean dev war
 
 # job define
 - job:
@@ -15,9 +16,12 @@
     description: 'Do not edit this job through the web!'
     project-type: freestyle
     block-downstream: false
+    scm:
+      - git:
+          url: https://github.com/nxintech/Charlie.git
+          branches:
+            - master
+          browser: auto
+          wipe-workspace: false
     builders:
-      - deploy:
-          hostname:
-            - tomcat01
-            - tomcat02
-          deploy_script: "/data0/script/deploy.sh"
+      - deploy
