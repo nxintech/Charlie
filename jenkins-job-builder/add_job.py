@@ -1,3 +1,4 @@
+#/usr/bin/env python
 # -*- coding:utf-8 -*-
 
 """
@@ -42,4 +43,4 @@ builder = Builder(jenkins_url, user, password, config,
                   plugins_list={})
 
 jobs, num_updated_jobs = builder.update_jobs(
-    ["test.yml"], [], n_workers=2)
+    [sys.argv[1]], [], n_workers=2)
