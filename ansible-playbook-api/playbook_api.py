@@ -95,3 +95,5 @@ class PlayBook(object):
     def run(self):
         self.pbex.run()
         stats = self.pbex._tqm._stats
+        self.pbex._tqm.send_callback('human_log')
+        return stats
