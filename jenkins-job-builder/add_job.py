@@ -9,9 +9,9 @@ import logging
 from six.moves import configparser
 from jenkins_jobs.builder import Builder
 
-
+# jenkins job builder libary requires a log handler
 logger = logging.getLogger("jenkins_jobs.builder")
-logger.setLevel(logging.INFO)
+# logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
 jenkins_url = "http://jenkins:8080"
