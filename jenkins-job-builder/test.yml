@@ -1,0 +1,23 @@
+# macros
+- builder:
+    name: deploy
+    builders:
+     - shell: "ssh root@{hostname} {deploy_script}"
+
+- builder:
+    name: gradle_build
+    builders:
+     - gradle: 
+
+# job define
+- job:
+    name: job-name
+    description: 'Do not edit this job through the web!'
+    project-type: freestyle
+    block-downstream: false
+    builders:
+      - deploy:
+          hostname:
+            - tomcat01
+            - tomcat02
+          deploy_script: "/data0/script/deploy.sh"
