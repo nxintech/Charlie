@@ -1,3 +1,6 @@
+ansible 2.0 playbook api usage example
+
+
 call back
 ------
 http://blog.cliffano.com/2014/04/06/human-readable-ansible-playbook-log-output-using-callback-plugin/
