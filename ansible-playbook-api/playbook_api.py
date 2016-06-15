@@ -97,3 +97,7 @@ class PlayBook(object):
         stats = self.pbex._tqm._stats
         self.pbex._tqm.send_callback('human_log')
         return stats
+
+if __name__ == "__main__":
+    pb = PlayBook("your playbook yaml", inventory="inventory.py", extra_vars=None)
+    print(pb.run())
