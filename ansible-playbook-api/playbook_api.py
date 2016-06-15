@@ -3,88 +3,47 @@
 # for ansible 2.0+
 
 import os
+from collections import namedtuple
 from ansible.parsing.dataloader import DataLoader
 from ansible.vars import VariableManager
 from ansible.inventory import Inventory
 from ansible.executor.playbook_executor import PlaybookExecutor
 
 
-class Options(object):
-    """
-    Options class to replace Ansible OptParser
-    """
+Options = namedtuple('Options', [
+    'listtags', 'listtasks', 'listhosts',
+    'syntax', 'check',
+    'connection', 'timeout', 'remote_user', 'private_key_file',
+    'module_path', 'forks',
+    'ssh_common_args', 'ssh_extra_args', 'sftp_extra_args', 'scp_extra_args',
+    'become', 'become_method', 'become_user',
+    'verbosity'])
 
-    def __init__(self, inventory=None, extra_vars=None):
-        self.inventory = inventory
-        self.extra_vars = extra_vars
+options = Options(
+    listtags=False, listtasks=False, listhosts=False,
+    syntax=False, check=False,
 
-        # dry-run
-        self.check = False  # must be False, otherwise playbook wont actually run
-        self.diff = None
-        self.syntax = None
+    # connection
+    connection='ssh', timeout=10, remote_user=None, private_key_file=None,
 
-        # connection
-        self.connection = "smart"  # or "ssh"
-        self.ask_pass = False
-        self.private_key_file = None
-        self.remote_user = None
-        self.timeout = 10
+    # args
+    ssh_common_args=None, ssh_extra_args=None,
+    sftp_extra_args=None, scp_extra_args=None,
 
-        # su
-        self.su = False
-        self.su_user = None
-        self.ask_su_pass = False
-
-        # sudo
-        self.sudo = False
-        self.sudo_user = None
-        self.ask_sudo_pass = False
-
-        # become
-        self.become = False
-        self.become_method = "sudo"
-        self.become_user = None
-        self.become_ask_pass = None
-
-        # ansible-vault
-        self.ask_vault_pass = False
-        self.vault_password_files = None
-        self.new_vault_password_file = None
-
-        # list
-        self.listhosts = None
-        self.listtasks = None
-        self.listtags = None
-
-        # tags
-        self.tags = "all"
-        self.skip_tags = None
-
-        # args
-        self.ssh_common_args = ""
-        self.sftp_extra_args = ""
-        self.scp_extra_args = ""
-        self.ssh_extra_args = ""
-
-        self.force_handlers = None
-        self.flush_cache = None
-        self.module_path = None
-        self.subset = None
-        self.verbosity = 0
-        self.forks = 5
-        self.output_file = None
+    module_path=None, forks=5,
+    become=True, become_method=None, become_user=None,
+    verbosity=None)
 
 
 class PlayBook(object):
     def __init__(self, playbook, inventory="inventory.py", extra_vars=None):
         self.playbook = "%s/%s" % (os.path.dirname(__file__), playbook)
-        self.options = Options(inventory, extra_vars)
+        self.options = options
         self.loader = DataLoader()
         self.variable_manager = VariableManager()
-        # self.variable_manager.set_inventory(self.options.inventory)
         self.inventory = Inventory(loader=self.loader,
                                    variable_manager=self.variable_manager,
-                                   host_list=self.options.inventory)
+                                   host_list=inventory)
         self.pbex = PlaybookExecutor(playbooks=[self.playbook],
                                      inventory=self.inventory,
                                      loader=self.loader,
