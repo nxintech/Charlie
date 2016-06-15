@@ -81,7 +81,7 @@ class PlayBook(object):
         self.options = Options(inventory, extra_vars)
         self.loader = DataLoader()
         self.variable_manager = VariableManager()
-        self.variable_manager.set_inventory(self.options.inventory)
+        # self.variable_manager.set_inventory(self.options.inventory)
         self.inventory = Inventory(loader=self.loader,
                                    variable_manager=self.variable_manager,
                                    host_list=self.options.inventory)
