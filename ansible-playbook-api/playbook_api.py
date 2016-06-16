@@ -11,7 +11,7 @@ from ansible.executor.playbook_executor import PlaybookExecutor
 
 
 Options = namedtuple('Options', [
-    'inventory', 'extra_vars'
+    'inventory', 
     'sudo', 'su', 'sudo_user', 'su_user',
     'listtags', 'listtasks', 'listhosts',
     'syntax', 'check',
@@ -28,7 +28,7 @@ class PlayBook(object):
         basedir = os.path.abspath(os.path.dirname(__file__))
         self.playbook = os.path.join(basedir, playbook)
         self.options = Options(
-            inventory=inventory,extra_vars=[extra_vars]
+            inventory=inventory,
             sudo=False, su=False, sudo_user=None, su_user=None,
             listtags=False, listtasks=False, listhosts=False,
             syntax=False, check=False,
@@ -41,6 +41,7 @@ class PlayBook(object):
             verbosity=0)
         self.loader = DataLoader()
         self.variable_manager = VariableManager()
+        self.variable_manager.extra_vars = extra_vars
         self.inventory = Inventory(loader=self.loader,
                                    variable_manager=self.variable_manager,
                                    host_list=inventory)
