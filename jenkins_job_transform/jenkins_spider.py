@@ -30,6 +30,7 @@ class JenkinsJobItemLoader(ItemLoader):
     default_output_processor = TakeFirst()
 
     name_out = Compose(lambda name: name[0])
+    # job status 在 jenkins 页面上状态为蓝色 job 为 data=4
     status_out = Compose(lambda status: True if status == ["4"] else False)
 
 
@@ -41,7 +42,9 @@ class JenkinsJobSpider(Spider):
         for sel in response.xpath('//tr[@class!="header"]'):
             loader = JenkinsJobItemLoader(
                 JenkinsJobItem(), selector=sel, response=response)
+            # get job status    
             loader.add_xpath('status', 'td[1]/@data')
+            # get job name
             loader.add_xpath('name', 'td[3]/a/text()')
             yield loader.load_item()
 
