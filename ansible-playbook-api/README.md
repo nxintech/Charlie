@@ -2,7 +2,7 @@ ansible 2.0 playbook api usage example
 
 使用
 ----
-新建 ansible.cfg 文件
+playbook_api.py 相同目录下新建 ansible.cfg 文件
 
 human_log.py copy 到 ansible.cfg 中指定的 `callback_plugins` 路径
 
