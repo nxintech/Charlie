@@ -5,6 +5,7 @@ https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/callback/hipch
 
 from ansible.plugins.callback.default import CallbackModule as CallbackModule_default
 
+
 class CallbackModule(CallbackModule_default):
 
     CALLBACK_VERSION = 2.0
@@ -13,32 +14,36 @@ class CallbackModule(CallbackModule_default):
     
     def __init__(self):
         super(CallbackModule, self).__init__()
-        self.tasks = {}
+        self.returns = {}
+        self.current_task = None
+
+    def parse_result(self, result):
+        return dict(
+            host=result._host,
+            failed=result.is_failed(),
+            msg=result._result['msg'])
 
     def v2_playbook_on_play_start(self, play):
         name = play.get_name().strip()
+        self.returns['play_name'] = name
         print("playbook '{0}' start".format(name))
     
     def v2_playbook_on_task_start(self, task, is_conditional):
-        name = task.get_name().strip()
-        print("task '{0}' start".format(name))
+        self.current_task = task.get_name().strip()
+        print("task '{0}' start".format(self.current_task))
 
     def v2_runner_on_failed(self, result, ignore_errors=False):
-        self.tasks[result._host]['state'] = False 
-        self.tasks[result._host]['result'] = result
-        super(CallbackModule, self)
+         self.returns[self.current_task] = self.parse_result(result)
     
     def v2_runner_on_ok(self, result):
         if result._result.get('changed', False):
-            self.tasks[result._host]['state'] = True 
-            self.tasks[result._host]['result'] = result
-            super(CallbackModule, self).v2_runner_on_ok(result)
+            self.returns[self.current_task] = self.parse_result(result)
         else:
             pass
 
     def v2_runner_on_unreachable(self, result):
         # do sth
-        super(CallbackModule, self).v2_runner_on_unreachable(result)
+        pass
 
     def v2_runner_on_skipped(self, result):
         pass
@@ -47,14 +52,14 @@ class CallbackModule(CallbackModule_default):
         pass
 
     def v2_playbook_item_on_ok(self, result):
-        super(CallbackModule, self).v2_playbook_item_on_ok(result)
+        pass
 
     def v2_playbook_item_on_skipped(self, result):
         pass
 
     def v2_playbook_item_on_failed(self, result):
-        super(CallbackModule, self).v2_playbook_item_on_failed(result)
+        pass
 
     def human_log(self):
-        print(self.tasks) 
-        
+        """ wirte self.returns to somewhrere insdead of print it """
+        print(self.returns)
