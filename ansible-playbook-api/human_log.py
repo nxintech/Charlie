@@ -10,20 +10,28 @@ class CallbackModule(CallbackModule_default):
     CALLBACK_VERSION = 2.0
     CALLBACK_TYPE = 'stdout'
     CALLBACK_NAME = 'human_log'
+    
+    def __init__(self):
+        super(CallbackModule, self).__init__()
+        self.tasks = {}
 
-    def v2_playbook_on_task_start(self, task, is_conditional):
-        pass
+    def v2_playbook_on_play_start(self, play):
+        name = play.get_name().strip()
+        print("playbook '{0}' start".format(name))
     
     def v2_playbook_on_task_start(self, task, is_conditional):
-        print("start task {0}".format(task.get_name().strip()))
+        name = task.get_name().strip()
+        print("task '{0}' start".format(name))
 
     def v2_runner_on_failed(self, result, ignore_errors=False):
-        # do sth
+        self.tasks[result._host]['state'] = False 
+        self.tasks[result._host]['result'] = result
         super(CallbackModule, self)
     
     def v2_runner_on_ok(self, result):
         if result._result.get('changed', False):
-            # do sth
+            self.tasks[result._host]['state'] = True 
+            self.tasks[result._host]['result'] = result
             super(CallbackModule, self).v2_runner_on_ok(result)
         else:
             pass
@@ -46,3 +54,7 @@ class CallbackModule(CallbackModule_default):
 
     def v2_playbook_item_on_failed(self, result):
         super(CallbackModule, self).v2_playbook_item_on_failed(result)
+
+    def human_log(self):
+        print(self.tasks) 
+        
