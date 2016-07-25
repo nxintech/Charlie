@@ -13,6 +13,9 @@ class CallbackModule(CallbackModule_default):
 
     def v2_playbook_on_task_start(self, task, is_conditional):
         pass
+    
+    def v2_playbook_on_task_start(self, task, is_conditional):
+        print("start task {0}".format(task.get_name().strip()))
 
     def v2_runner_on_failed(self, result, ignore_errors=False):
         # do sth
