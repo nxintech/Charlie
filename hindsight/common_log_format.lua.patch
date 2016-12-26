@@ -16,7 +16,7 @@
  local nginx_upstream_sep        = ", "
  local nginx_upstream_gsep       = " : "
 -local nginx_upstream_addr       = l.C((1 - l.S(nginx_upstream_sep))^1)
-+local nginx_upstream_addr = l.C((nginx_upstream_unix_sock + (ip.v6 + ip.v4) * l.P":" * port) - l.S(nginx_upstream_sep))
++local nginx_upstream_addr = l.C((nginx_upstream_unix_sock + (l.P"[" * ip.v6 * l.P"]" + ip.v4) * l.P":" * port) - l.S(nginx_upstream_sep))
  local nginx_upstream_addrs      = nginx_upstream_addr * (nginx_upstream_sep * nginx_upstream_addr)^0
  local nginx_upstream_time       = double + l.P"-" / function () return 0 end
  local nginx_upstream_times      = nginx_upstream_time * (nginx_upstream_sep * nginx_upstream_time)^0
