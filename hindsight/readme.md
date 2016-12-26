@@ -86,3 +86,8 @@ cmake -DCMAKE_BUILD_TYPE=release ..
 make
 cpack -G RPM
 ```
+
+# patch
+lua_sandbox_extensions 里的 decoders.nginx.access 配置文件里变量 log_format 内的 $upstream_addr 变量不能使用引号引起来，否则匹配不到 access log，详见 https://github.com/mozilla-services/lua_sandbox_extensions/issues/56
+
+common_log_format.lua.patch 修复了这个问题
