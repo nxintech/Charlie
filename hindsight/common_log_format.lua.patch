@@ -1,0 +1,22 @@
+--- /usr/lib/luasandbox/modules/lpeg/common_log_format.lua	2016-12-15 11:26:18.000000000 +0800
++++ /usr/lib/luasandbox/modules/lpeg/common_log_format.lua.patch	2016-12-26 15:06:53.768997733 +0800
+@@ -85,9 +85,18 @@
+ + l.P"emerg"   / "0")
+ / tonumber, "Severity")
+ 
++local port                      = l.P"6553" * l.R"05"
++                                + l.P"655" * l.R"02" * l.digit
++                                + l.P"65" * l.R"04" * l.digit * l.digit
++                                + l.P"6" * l.R"04" * l.digit * l.digit * l.digit
++                                + l.R"15" * l.digit * l.digit * l.digit * l.digit
++                                + l.R"19" * l.digit^-3
++local nginx_log_utf8 = l.P"\\x" * (l.R"09" + l.R"AF") * (l.R"09" + l.R"AF")
++local nginx_log_safe_char = l.P"\\x5C" * l.S";{}" + l.P"\\x22" + l.P"\\x5C" + (l.R"\20\126" - l.S"\"\\;{}") + nginx_log_utf8
++local nginx_upstream_unix_sock = l.P"unix:" * nginx_log_safe_char^1
+ local nginx_upstream_sep        = ", "
+ local nginx_upstream_gsep       = " : "
+-local nginx_upstream_addr       = l.C((1 - l.S(nginx_upstream_sep))^1)
++local nginx_upstream_addr = l.C((nginx_upstream_unix_sock + (ip.v6 + ip.v4) * l.P":" * port) - l.S(nginx_upstream_sep))
+ local nginx_upstream_addrs      = nginx_upstream_addr * (nginx_upstream_sep * nginx_upstream_addr)^0
+ local nginx_upstream_time       = double + l.P"-" / function () return 0 end
+ local nginx_upstream_times      = nginx_upstream_time * (nginx_upstream_sep * nginx_upstream_time)^0
