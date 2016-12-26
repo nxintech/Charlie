@@ -10,9 +10,9 @@
 +                                + l.P"6" * l.R"04" * l.digit * l.digit * l.digit
 +                                + l.R"15" * l.digit * l.digit * l.digit * l.digit
 +                                + l.R"19" * l.digit^-3
-+local nginx_log_utf8 = l.P"\\x" * (l.R"09" + l.R"AF") * (l.R"09" + l.R"AF")
-+local nginx_log_safe_char = l.P"\\x5C" * l.S";{}" + l.P"\\x22" + l.P"\\x5C" + (l.R"\20\126" - l.S"\"\\;{}") + nginx_log_utf8
-+local nginx_upstream_unix_sock = l.P"unix:" * nginx_log_safe_char^1
++local nginx_log_utf8            = l.P"\\x" * (l.R"09" + l.R"AF") * (l.R"09" + l.R"AF")
++local nginx_log_safe_char       = l.P"\\x5C" * l.S";{}" + l.P"\\x22" + l.P"\\x5C" + (l.R"\20\126" - l.S"\"\\;{}") + nginx_log_utf8
++local nginx_upstream_unix_sock  = l.P"unix:" * nginx_log_safe_char^1
  local nginx_upstream_sep        = ", "
  local nginx_upstream_gsep       = " : "
 -local nginx_upstream_addr       = l.C((1 - l.S(nginx_upstream_sep))^1)
