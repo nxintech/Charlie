@@ -91,3 +91,6 @@ cpack -G RPM
 使用 lua_sandbox_extensions 模块 decoders.nginx.access，如果配置文件中变量 log_format 的值包含字符串 "$upstream_addr", 那么 $upstream_addr 前面是不能使用引号引起来的，否则匹配不到 access log，详见 https://github.com/mozilla-services/lua_sandbox_extensions/issues/56
 
 common_log_format.lua.patch 修复了这个问题
+```shell
+patch -p0 < common_log_format.lua.patch
+```
