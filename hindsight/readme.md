@@ -57,8 +57,9 @@ rpm -ivh parquet-cpp-0.0.1-Linux.rpm
 
 # install librdkafka
 git clone https://github.com/edenhill/librdkafka.git
+cd librdkafka/packaging/rpm
+yum install mock rpmbuild
 make
-make install
 
 # install libgeoip libpostgres
 yum install geoip-devel postgresql-devel
