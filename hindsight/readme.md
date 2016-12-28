@@ -1,7 +1,7 @@
 # install
 
-## install hindsight
-编译安装:
+## 编译安装
+
 * install gcc 4.7+
 ```
 rpm --import http://ftp.scientificlinux.org/linux/scientific/5x/x86_64/RPM-GPG-KEYs/RPM-GPG-KEY-cern
@@ -87,6 +87,9 @@ cmake -DCMAKE_BUILD_TYPE=release ..
 make
 cpack -G RPM
 ```
+
+# 二进制安装
+release 目录下有打包好的 rpm，直接安装即可
 
 # patch
 使用 lua_sandbox_extensions 模块 decoders.nginx.access，如果配置文件中变量 log_format 的值包含字符串 "$upstream_addr", 那么 $upstream_addr 前面是不能使用引号引起来的，否则匹配不到 access log，详见 https://github.com/mozilla-services/lua_sandbox_extensions/issues/56
