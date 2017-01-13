@@ -1,5 +1,5 @@
 --- /usr/lib/luasandbox/modules/lpeg/common_log_format.lua	2016-12-15 11:26:18.000000000 +0800
-+++ /usr/lib/luasandbox/modules/lpeg/common_log_format.lua.patch	2016-12-26 15:06:53.768997733 +0800
++++ /usr/lib/luasandbox/modules/lpeg/common_log_format.lua	2016-12-26 15:06:53.768997733 +0800
 @@ -85,9 +85,18 @@
  + l.P"emerg"   / "0")
  / tonumber, "Severity")
