@@ -1,4 +1,5 @@
-1.install node
+1. install node
+
 
 2. install node package
 ```
@@ -39,11 +40,12 @@ lessc css/semaphore.less > css/semaphore.css
 pug html/*.jade html/*/*.jade html/*/*/*.jade
 ```
 
-5.add a line after `go-bindata` in make.sh
+5. add a line after `go-bindata` in make.sh
 ```
 cp util/bindata.go $GOPATH/github.com/liuyangc3/semaphore/util/bindata.go
 ```
-build
+
+6. build
 ```
 ./make.sh
 ```
