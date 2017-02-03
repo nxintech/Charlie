@@ -43,7 +43,7 @@ pug html/*.jade html/*/*.jade html/*/*/*.jade
 
 5 add a line after `go-bindata` in make.sh
 ```
-cp util/bindata.go $GOPATH/github.com/liuyangc3/semaphore/util/bindata.go
+cp util/bindata.go $GOPATH/src/github.com/liuyangc3/semaphore/util/bindata.go
 ```
 
 6 build
