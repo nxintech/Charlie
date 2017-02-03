@@ -1,3 +1,3 @@
 ```
-npm install -g async
+npm install -g async pug-cli
 ```
