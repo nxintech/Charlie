@@ -5,6 +5,7 @@
 ```
 npm install bundle pug-cli nodemon reflex less -g
 ```
+
 3. install go package
 ```
 go get -u github.com/jteeuwen/go-bindata/...
