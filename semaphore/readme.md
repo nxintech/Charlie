@@ -50,3 +50,16 @@ cp util/bindata.go $GOPATH/src/github.com/liuyangc3/semaphore/util/bindata.go
 ```
 ./make.sh
 ```
+
+# more
+
+if hostname not in knownhost will get error
+```
+UNREACHABLE! => {"changed": false, "msg": "ERROR! (25, 'Inappropriate ioctl for device')", "unreachable": true}
+```
+vim /etc/ansible/ansible.cfg
+```
+[defaults]
+host_key_checking = False
+pipelining = True
+```
