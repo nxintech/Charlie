@@ -63,3 +63,5 @@ vim /etc/ansible/ansible.cfg
 host_key_checking = False
 pipelining = True
 ```
+
+use ControlPersist in /etc/ssh/ssh_config 
