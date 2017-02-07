@@ -80,6 +80,13 @@ def append_hostvars(hostvars, groups, key, server, namegroup=False):
     for group in get_groups_from_server(server, namegroup=namegroup):
         groups[group].append(key)
 
+def host_ip_filter(server, ip_prefix):
+    for name, networks in server['addresses'].items():
+        for network in networks:
+            if network['OS-EXT-IPS:type'] == 'fixed' and network['addr'].startswith(ip_prefix):
+                return not network['addr'].startswith('10.211.254')
+    return False
+
 
 def get_host_groups_from_cloud(inventory):
     groups = collections.defaultdict(list)
@@ -99,7 +106,10 @@ def get_host_groups_from_cloud(inventory):
 
         if 'interface_ip' not in server:
             continue
-        firstpass[server['name']].append(server)
+            
+        if host_ip_filter(server, '10.211'):
+            firstpass[server['name']].append(server)
+        # firstpass[server['name']].append(server)
     for name, servers in firstpass.items():
         if len(servers) == 1 and use_hostnames:
             append_hostvars(hostvars, groups, name, servers[0])
