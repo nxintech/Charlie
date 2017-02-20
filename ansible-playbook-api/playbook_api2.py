@@ -1,7 +1,8 @@
 # -*- coding:utf-8 -*-
 
 from __future__ import print_function
-import json
+import ast
+import argparse
 from collections import namedtuple
 from ansible.parsing.dataloader import DataLoader
 from ansible.vars import VariableManager
@@ -22,7 +23,7 @@ class ResultCallback(CallbackBase):
         This method could store the result in an instance attribute for retrieval later
         """
         host = result._host
-        print(json.dumps({host.name: result._result}, indent=4))
+        print({host.name: result._result}, indent=4)
 
 
 Options = namedtuple('Options', [
@@ -68,6 +69,19 @@ class PlayBook(object):
         pass
 
 
+parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description="""
+ansible Playbook API. Usage:
+    playbook_api -i /etc/ansible/hosts -e {'key': 'value'} test.yaml
+
+    Notice :key and value in extra-vars must in __single quotation__
+""")
+parser.add_argument('-i', '--inventory', default='/etc/ansible/hosts', help='ansible playbook inventory')
+parser.add_argument('-e', '--extra-vars', default={}, type=ast.literal_eval, help='playbook extra-vars')
+parser.add_argument('playbook', help='ansible playbook yaml file')
+
 if __name__ == '__main__':
-    pb = PlayBook(inventory='hosts', extra_vars={"passin": "localhost"})
-    print(pb.run_playbook('test.yml'))
+    args = parser.parse_args()
+    pb = PlayBook(inventory=args.inventory, extra_vars=args.extra_vars)
+    print(pb.run_playbook(args.playbook))
+
+
