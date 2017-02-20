@@ -8,8 +8,9 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"crypto/md5"
-	"github.com/astaxie/beego/httplib"
+	"net/http"
 	"errors"
+	"io/ioutil"
 )
 
 type ShortMessage struct {
@@ -23,12 +24,11 @@ type ShortMessage struct {
 }
 
 /* Global variables must define by var */
-var url = "http://xxxx.nxin.com/message/sendsmsCommonNxin";
-var secret = "xxxxx"
+var api = "http://xxxx.nxin.com/message/sendsmsCommonNxin";
+var secret = "xxxx"
 var sys_id = ""
 
-
-func genXml(message string, phones string) string{
+func genXml(message string, phones string) string {
 	data := &ShortMessage{
 		SendSort: "SMS",
 		SendType: "COMMON_GROUP",
@@ -42,12 +42,10 @@ func genXml(message string, phones string) string{
 	return string(bytes)
 }
 
-func main() {
-	if (len(os.Args) != 3) {
-		fmt.Println(errors.New("only support two arguments"))
+func sendSmsMessage(message string, phones string, debug bool) {
+	client := http.Client{
+		Timeout: time.Duration(5 * time.Second),
 	}
-	message := os.Args[1]
-	phones := os.Args[2]
 
 	// timestamp
 	timeStamp := time.Now().UnixNano() / int64(time.Millisecond)
@@ -59,17 +57,42 @@ func main() {
 	cipherStr := md5Ctx.Sum(nil)
 	token := hex.EncodeToString(cipherStr)
 
-        // do request
-	r := httplib.Post(url).SetTimeout(5 * time.Second, 5 * time.Second)
-	r.Param("message", genXml(message, phones))
-	r.Param("timestamp", timeStampString)
-	r.Param("systemId", sys_id)
-	r.Param("accessToken", token)
-	r.Param("businessChannel", "OTHERS")
+	req, err := http.NewRequest("POST", api, nil)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	query := req.URL.Query()
+	query.Add("message", genXml(message, phones))
+	query.Add("timestamp", timeStampString)
+	query.Add("systemId", sys_id)
+	query.Add("accessToken", token)
+	query.Add("businessChannel", "OTHERS")
+	req.URL.RawQuery = query.Encode()
+	if(debug) {
+		println(req.URL.String())
+	}
 
-	resp, err := r.String()
+	resp, err :=client.Do(req)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(resp)
+	defer resp.Body.Close()
+	resp_body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(resp_body))
+}
+
+func main() {
+	args_len := len(os.Args)
+	if ( args_len < 3 || args_len > 4) {
+		fmt.Println(errors.New("only support two or three arguments"))
+		os.Exit(1)
+	}
+	message := os.Args[1]
+	phones := os.Args[2]
+	debug := false
+	if (args_len == 4) {
+		debug = true
+	}
+	sendSmsMessage(message, phones, debug)
 }
