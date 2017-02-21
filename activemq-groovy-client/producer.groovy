@@ -1,7 +1,8 @@
 @Grapes([
         @Grab(group = 'javax.jms', module = 'jms', version = '1.1'),
         @Grab(group = 'org.apache.activemq', module = 'activemq-all', version = '5.11.1'),
-        @Grab(group = 'org.apache.logging.log4j', module = 'log4j', version = '2.8')
+        @Grab(group = 'org.apache.logging.log4j', module = 'log4j-api', version = '2.8'),
+        @Grab(group = 'org.apache.logging.log4j', module = 'log4j-core', version = '2.8')
 ])
 
 import javax.jms.Session
