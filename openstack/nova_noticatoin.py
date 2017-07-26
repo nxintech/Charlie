@@ -1,17 +1,28 @@
 # -*- coding: utf-8 -*-
-import sys
+
+# https://wiki.openstack.org/wiki/SystemUsageData#Event_Types_and_Payload_data:
+# https://gist.github.com/vagelim/64b355b65378ecba15b0
+
+
+import logging
 import simplejson as json
-import logging as log
 from kombu import Connection
 from kombu import Exchange
 from kombu import Queue
 from kombu.mixins import ConsumerMixin
 
-# https://wiki.openstack.org/wiki/SystemUsageData#Event_Types_and_Payload_data:
-# https://gist.github.com/vagelim/64b355b65378ecba15b0
+from .metad import Client
 
-log.basicConfig(stream=sys.stdout, level=log.DEBUG)
+# set logger
+logger = logging.getLogger()
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+log = logging.getLogger()
 
+# set rabbit
 hosts = ("yourip:5672",)
 user = "openstack"
 password = ""
@@ -19,19 +30,8 @@ exchange_name = "nova"
 routing_key = "notifications.info"
 queue_name = "notifications.info"
 
-
-def extract(oslo_message):
-    data = {"project_id": oslo_message["_context_project_id"]}
-    payload = oslo_message["payload"]
-    data["hostname"] = payload["hostname"]
-    fixed_ip = payload["fixed_ips"][0]
-    data["address"] = fixed_ip["address"]
-    data["mac"] = fixed_ip["vif_mac"]
-    data["instance_id"] = payload["instance_id"]
-    image_meta = payload["image_meta"]
-    data["os_username"] = image_meta["os_username"]
-    data["os_password"] = image_meta["os_password"]
-    return data
+# metad clinet
+client = Client()
 
 
 class NotificationsDump(ConsumerMixin):
@@ -45,13 +45,57 @@ class NotificationsDump(ConsumerMixin):
 
     def on_message(self, body, message):
         oslo_message = json.loads(body["oslo.message"])
-        if oslo_message["event_type"].startswith("compute.instance.create.end"):
+        event_type = oslo_message["event_type"]
+
+        if event_type == "compute.instance.create.end":
             data = extract(oslo_message)
-            log.info("data :%s" % data)
-        elif oslo_message["event_type"].startswith("compute.instance.delete.end"):
-            log.info('Body: %r' % body)
+            instance_id = data["instance_id"]
+            log.info("instance create :%s" % data)
+
+            # add metad data
+            endpiont = "/nodes/{}".format(instance_id)
+            res = client.mput("data{}".format(endpiont), data)
+            log.info("metad put instance :%s, result: %s" % (instance_id, res))
+
+            # add metad mapping
+            mapping = {data["hostname"]: {"node": endpiont}}
+            res = client.mput("mapping", mapping)
+            log.info("metad put mapping :%s, result: %s" % (mapping, res))
+
+        elif event_type == "compute.instance.delete.end":
+            data = extract(oslo_message)
+            instance_id = data["instance_id"]
+            log.info('instance delete : %s' % instance_id)
+
+            # delete metad data
+            res = client.mdelete("data/{}".format(instance_id))
+            log.info('metad data delete: %s, result: %s' % (instance_id, res))
+
+            # delete metad mapping
+            res = client.mdelete("mapping/{}".format(instance_id))
+            log.info('metad mapping delete: %s, result: %s' % (instance_id, res))
+
+        # if not ack, will re-receive message
         message.ack()
 
-url = "amqp://" + ";".join(["{}:{}@{}".format(user, password, host) for host in hosts]) + "/"
-with Connection(url, heartbeat=15) as conn:
-    NotificationsDump(conn).run()
+
+def extract(oslo_message):
+    data = {"project_id": oslo_message["_context_project_id"]}
+    payload = oslo_message["payload"]
+    data["hostname"] = payload["hostname"]
+    data["instance_id"] = payload["instance_id"]
+    image_meta = json.loads(payload["image_meta"]["image_meta"])
+    data["os_username"] = image_meta["os_username"]
+    data["os_password"] = image_meta["os_password"]
+
+    fixed_ip = payload.get("fixed_ip", None)
+    if fixed_ip:
+        fixed_ip = fixed_ip[0]
+        data["address"] = fixed_ip["address"]
+        data["mac"] = fixed_ip["vif_mac"]
+    return data
+
+if __name__ == '__main__':
+    url = "amqp://" + ";".join(["{}:{}@{}".format(user, password, host) for host in hosts]) + "/"
+    with Connection(url, heartbeat=15) as conn:
+        NotificationsDump(conn).run()
