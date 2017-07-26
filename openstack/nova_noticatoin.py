@@ -68,11 +68,12 @@ class NotificationsDump(ConsumerMixin):
             log.info('instance delete : %s' % instance_id)
 
             # delete metad data
-            res = client.mdelete("data/{}".format(instance_id))
+            endpiont = "/nodes/{}".format(instance_id)
+            res = client.mdelete("data{}".format(endpiont))
             log.info('metad data delete: %s, result: %s' % (instance_id, res))
 
             # delete metad mapping
-            res = client.mdelete("mapping/{}".format(instance_id))
+            res = client.mdelete("mapping/{}".format(data["hostname"]))
             log.info('metad mapping delete: %s, result: %s' % (instance_id, res))
 
         # if not ack, will re-receive message
