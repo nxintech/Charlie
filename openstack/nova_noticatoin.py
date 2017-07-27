@@ -89,7 +89,7 @@ def extract(oslo_message):
     data["os_username"] = image_meta["os_username"]
     data["os_password"] = image_meta["os_password"]
 
-    fixed_ip = payload.get("fixed_ip", None)
+    fixed_ip = payload.get("fixed_ips", None)
     if fixed_ip:
         fixed_ip = fixed_ip[0]
         data["address"] = fixed_ip["address"]
