@@ -7,6 +7,9 @@
 . /etc/init.d/functions
 
 prog=etcd
+name=`hostname`
+ip=`hostname -i` # this need hostname exist in DNS
+register_ip=  # fill this manully
 ETCD_BIN=/opt/etcd-v3.2.4-linux-amd64/etcd
 
 if [[ ! -e $ETCD_BIN ]]; then
@@ -24,7 +27,14 @@ start() {
   [[ $started =~ running ]] && echo $started && return 1
 
   echo -n $"Starting $prog: "
-  $ETCD_EXEC 3>&1 2>&1 1>&$ETCD_LOGFILE &
+  $ETCD_EXEC --name $name --initial-advertise-peer-urls http://0.0.0.0:2380 \
+  --listen-peer-urls http://0.0.0.0:2380 \
+  --listen-client-urls http://${ip}:2379,http://127.0.0.1:2379 \
+  --advertise-client-urls http://${ip}:2379 \
+  --data-dir /data0/etcd/data --wal-dir /data0/etcd/wal \
+  --discovery http://${register_ip}/v2/keys/discovery/nxin
+  
+  3>&1 2>&1 1>&$ETCD_LOGFILE &
   RETVAL=$?
   echo $! > $ETCD_PIDFILE
   [[ $RETVAL ]] && success || failure
