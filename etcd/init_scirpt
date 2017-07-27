@@ -1,0 +1,70 @@
+#!/bin/bash
+# Startup script for etcd
+#
+# chkconfig: 2345 20 80
+# description: Starts and stops etcd
+
+. /etc/init.d/functions
+
+prog=etcd
+ETCD_BIN=/opt/etcd-v3.2.4-linux-amd64/etcd
+
+if [[ ! -e $ETCD_BIN ]]; then
+  echo "etcd binary not found."
+  exit 5
+fi
+
+ETCD_LOCKFILE="/var/lock/subsys/$prog"
+ETCD_LOGFILE=/data0/etcd/logs/etcd.log
+ETCD_PIDFILE=/var/run/etcd.pid
+ETCD_EXEC="$ETCD_BIN"
+
+start() {
+  started=$(status -p "$ETCD_PIDFILE" "$ETCD_BIN")
+  [[ $started =~ running ]] && echo $started && return 1
+
+  echo -n $"Starting $prog: "
+  $ETCD_EXEC 3>&1 2>&1 1>&$ETCD_LOGFILE &
+  RETVAL=$?
+  echo $! > $ETCD_PIDFILE
+  [[ $RETVAL ]] && success || failure
+  [[ $RETVAL ]] && touch "$ETCD_LOCKFILE"
+  return $RETVAL
+}
+
+stop() {
+  echo -n $"Stopping $prog: "
+  killproc -p "$ETCD_PIDFILE" "$ETCD_BIN"
+
+  RETVAL=$?
+  echo
+  [ $RETVAL -eq 0 ] && rm -fr "$ETCD_LOCKFILE"
+  return $RETVAL
+}
+
+case $1 in
+  start)
+    start
+    ;;
+
+  stop)
+    stop
+    ;;
+
+  restart)
+    stop
+    start
+    ;;
+
+  status)
+    status "$ETCD_BIN"
+    RETVAL=$?
+    ;;
+
+  *)
+    echo "Usage: $0 {start|stop|restart|status}"
+    RETVAL=1
+    ;;
+esac
+
+exit $RETVAL
