@@ -11,7 +11,7 @@ from kombu import Exchange
 from kombu import Queue
 from kombu.mixins import ConsumerMixin
 
-from .metad import Client
+from metad import Client
 
 # set logger
 logger = logging.getLogger()
