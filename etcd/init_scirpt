@@ -32,7 +32,7 @@ start() {
   --listen-client-urls http://${ip}:2379,http://127.0.0.1:2379 \
   --advertise-client-urls http://${ip}:2379 \
   --data-dir /data0/etcd/data --wal-dir /data0/etcd/wal \
-  --discovery http://${register_ip}:2379/v2/keys/discovery/nxin \
+  --discovery https://discovery.etcd.io/3bb9f683bf404501e55e29e45311201e \
   3>&1 2>&1 1>&$ETCD_LOGFILE &
   RETVAL=$?
   echo $! > $ETCD_PIDFILE
