@@ -6,9 +6,9 @@ mkdir /data0/etcd/{data,wal,logs} -p
 ```
 
 ### 启动
-集群计划3台机器，先启动一台用于注册机器
+集群计划3台机器，还需要额外的etcd用于服务发现
 ```
-# 假设第一台的ip为 10.0.0.1
+# 服务发现机器的ip为 10.0.0.1
 etcd --name `hostname` --initial-advertise-peer-urls http://0.0.0.0:2380 \
   --listen-peer-urls http://0.0.0.0:2380 \
   --listen-client-urls http://10.0.0.1:2379,http://127.0.0.1:2379 \
@@ -17,10 +17,9 @@ etcd --name `hostname` --initial-advertise-peer-urls http://0.0.0.0:2380 \
 ```
 注册集群信息，台数为3
 ```
-curl https://discovery.etcd.io/new?size=3
-# https://discovery.etcd.io/3bb9f683bf404501e55e29e45311201e
+curl -XPUT http://10.0.0.1：2379/v2/keys/discovery/nxin -d value=3
 ```
-退出etcd，分别在每台机器上以集群方式启动
+分别在每台机器上以集群方式启动
 ```
 ./etcd --name `hostname` --initial-advertise-peer-urls http://0.0.0.0:2380 \
   --listen-peer-urls http://0.0.0.0:2380 \
