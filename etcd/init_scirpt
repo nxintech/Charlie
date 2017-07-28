@@ -17,8 +17,11 @@ if [[ ! -e $ETCD_BIN ]]; then
   exit 5
 fi
 
+ETCD_HOME=/data0/etcd
+ETCD_DATADIR=$ETCD_HOME/data
+ETCD_WALDIR=$ETCD_HOME/wal
+ETCD_LOGFILE=$ETCD_HOME/logs/etcd.log
 ETCD_LOCKFILE="/var/lock/subsys/$prog"
-ETCD_LOGFILE=/data0/etcd/logs/etcd.log
 ETCD_PIDFILE=/var/run/etcd.pid
 ETCD_EXEC="$ETCD_BIN"
 
@@ -27,11 +30,11 @@ start() {
   [[ $started =~ running ]] && echo $started && return 1
 
   echo -n $"Starting $prog: "
-  $ETCD_EXEC --name $name --initial-advertise-peer-urls http://0.0.0.0:2380 \
-  --listen-peer-urls http://0.0.0.0:2380 \
+  $ETCD_EXEC --name $name --initial-advertise-peer-urls http://$ip:2380 \
+  --listen-peer-urls http://$ip:2380 \
   --listen-client-urls http://${ip}:2379,http://127.0.0.1:2379 \
   --advertise-client-urls http://${ip}:2379 \
-  --data-dir /data0/etcd/data --wal-dir /data0/etcd/wal \
+  --data-dir $ETCD_DATADIR --wal-dir $ETCD_WALDIR \
   --discovery https://discovery.etcd.io/3bb9f683bf404501e55e29e45311201e \
   3>&1 2>&1 1>&$ETCD_LOGFILE &
   RETVAL=$?
