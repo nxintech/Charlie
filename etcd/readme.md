@@ -17,7 +17,7 @@ etcd --name `hostname` --initial-advertise-peer-urls http://0.0.0.0:2380 \
 ```
 注册集群信息，台数为3
 ```
-curl -XPUT http://10.0.0.1:2379/v2/keys/discovery/nxin -d value=3
+curl -XPUT http://10.0.0.1:2379/v2/keys/discovery/nxin/_config/size -d value=3
 ```
 分别在每台机器上以集群方式启动
 ```
