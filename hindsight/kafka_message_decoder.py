@@ -15,5 +15,5 @@ consumer = KafkaConsumer('nginx-access-log',
                                             'nxin-log-kafka03.test.yz:9092']
                          )
 for msg in consumer:
-    print(msg)
+    print(message.fields)
     break
