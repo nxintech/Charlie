@@ -98,3 +98,7 @@ common_log_format.lua.patch 修复了这个问题
 ```shell
 patch -p0 < common_log_format.lua.patch
 ```
+# protocol buffer
+```
+protoc message.proto --python_out=.
+```
