@@ -35,7 +35,7 @@ start() {
   --listen-client-urls http://${ip}:2379,http://127.0.0.1:2379 \
   --advertise-client-urls http://${ip}:2379 \
   --data-dir $ETCD_DATADIR --wal-dir $ETCD_WALDIR \
-  --discovery https://discovery.etcd.io/3bb9f683bf404501e55e29e45311201e \
+  --discovery https://discovery.etcd.io/3bb9f683bf404501e55e29e45311201e \ # change this line
   3>&1 2>&1 1>&$ETCD_LOGFILE &
   RETVAL=$?
   echo $! > $ETCD_PIDFILE
