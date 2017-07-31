@@ -15,7 +15,7 @@ etcd --name `hostname` --initial-advertise-peer-urls http://0.0.0.0:2380 \
   --advertise-client-urls http://10.0.0.1:2379 \
   --data-dir /data0/etcd/data --wal-dir /data0/etcd/wal \
 ```
-集群信息，台数为3
+注册新的集群，名称为nxin，台数为3
 ```
 curl -XPUT http://10.0.0.1:2379/v2/keys/discovery/nxin/_config/size -d value=3
 ```
