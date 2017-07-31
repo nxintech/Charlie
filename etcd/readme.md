@@ -15,18 +15,28 @@ etcd --name `hostname` --initial-advertise-peer-urls http://0.0.0.0:2380 \
   --advertise-client-urls http://10.0.0.1:2379 \
   --data-dir /data0/etcd/data --wal-dir /data0/etcd/wal \
 ```
-注册集群信息，台数为3
+集群信息，台数为3
 ```
 curl -XPUT http://10.0.0.1:2379/v2/keys/discovery/nxin/_config/size -d value=3
 ```
+
+如果没有额外的etcd用于注册,可以使用共有的
+```
+curl https://discovery.etcd.io/new?size=3
+https://discovery.etcd.io/3bb9f683bf404501e55e29e45311201e
+```
+
 分别在每台机器上以集群方式启动
 ```
-./etcd --name `hostname` --initial-advertise-peer-urls http://0.0.0.0:2380 \
-  --listen-peer-urls http://0.0.0.0:2380 \
-  --listen-client-urls http://xxxxxx:2379,http://127.0.0.1:2379 \
-  --advertise-client-urls http://xxxxxx:2379 \
+./etcd --name `hostname` --initial-advertise-peer-urls http://<host ip>:2380 \
+  --listen-peer-urls http://<host ip>:2380 \
+  --listen-client-urls http://<host ip>:2379,http://127.0.0.1:2379 \
+  --advertise-client-urls http://<host ip>:2379 \
   --data-dir /data0/etcd/data --wal-dir /data0/etcd/wal \
-  --discovery https://discovery.etcd.io/3bb9f683bf404501e55e29e45311201e
+  --discovery http://10.0.0.1:2379/v2/keys/discovery/nxin
+  
+  # 如果是用共有注册服务
+  --discovery https://discovery.etcd.io/3bb9f683bf404501e55e29e45311201e
 ```
 ### service 启动
 参考 init_script
