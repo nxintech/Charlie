@@ -5,8 +5,8 @@ import (
 	"net/http"
   
 	"golang.org/x/net/context"
-  "google.golang.org/grpc"
-  "github.com/golang/glog"
+  	"google.golang.org/grpc"
+  	"github.com/golang/glog"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
 	"github.com/coreos/etcd/etcdserver/etcdserverpb/gw"
