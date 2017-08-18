@@ -50,16 +50,25 @@ go get github.com/coreos/etcd/etcdserver/etcdserverpb
 
 
 cd $GOPATH/src/github.com/coreos
-# include 目录是 protoc 的include
 
-protoc -I./include -I. -I$GOPATH/src \
+# include 目录是 protoc 的include
+protoc -I./include \
 -I$GOPATH/src/github.com/coreos \
 -I$GOPATH/src/github.com/gogo/protobuf \
 -I$GOPATH/src/github.com/google/protobuf/src \
--I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/go
+-I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
 --grpc-gateway_out=logtostderr=true:. \
 etcd/etcdserver/etcdserverpb/rpc.proto
 
 # for go 
 --go_out=plugins=grpc:.
 ```
+
+编译好的文件叫 rpc.pb.gw.go，直接使用会报错，需要做如下修改
+```diff
++package gw
+-package etcdserverpb
+```
+一些不能使用的 struct `name`需要在前面加上 etcdserverpb.`name`
+
+修改后的文件我已经上传到这里，替换掉 $GOPAH/src/github.com/coreos/etcd/etcdserver/etcdserverpb/gw 目录下对应文件即可
