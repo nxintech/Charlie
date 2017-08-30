@@ -1,8 +1,10 @@
-# HTTP
-https://github.com/coreos/etcd/blob/master/Documentation/dev-guide/api_grpc_gateway.md
+API reference https://coreos.com/etcd/docs/latest/dev-guide/api_reference_v3.html
 
-http://tool.oschina.net/encrypt?type=3
+grpc gateway https://github.com/coreos/etcd/blob/master/Documentation/dev-guide/api_grpc_gateway.md
 
+base64 tool http://tool.oschina.net/encrypt?type=3
+
+json format http://tool.oschina.net/codeformat/json
 # KV
 ```
 ./etcdctl get key --prefix| -w (fields|json)
