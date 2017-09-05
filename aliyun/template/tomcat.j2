@@ -1,0 +1,82 @@
+{
+  "ROSTemplateFormatVersion": "2015-09-01",
+  "Description": "创建一个按量付费的ecs实例和一个安全组",
+
+  "Parameters": {
+    "ImageId": {
+      "Type": "String",
+      "Default": "{{ image_id }}",
+      "Description": "镜像文件ID"
+    },
+    "InstanceType": {
+      "Type": "String",
+      "Description": "实例的资源规格",
+      "Default": "ecs.s3.large",
+      "AllowedValues": [
+      {% for type in instance_types -%}
+        "{{ type }}"{% if not loop.last %},{% endif %}
+      {% endfor -%}
+      ]
+    },
+    "SecurityGroupName": {
+      "Type": "String",
+      "Default": "ros",
+      "Description": "安全组名称"
+    }
+  },
+
+  "Resources": {
+    "{{ resource_name }}": {
+      "Type": "ALIYUN::ECS::Instance",
+      "Properties": {
+        "ImageId": {
+          "Ref": "ImageId"
+        },
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "SecurityGroupId": {
+          "Fn::GetAtt": [
+            "SecurityGroup",
+            "SecurityGroupId"
+          ]
+        }
+      }
+    },
+    "SecurityGroup": {
+      "Type": "ALIYUN::ECS::SecurityGroup",
+      "Properties": {
+        "SecurityGroupName": {
+          "Ref": "SecurityGroupName"
+        }
+      }
+    }
+  },
+
+  "Outputs": {
+    "InstanceId": {
+      "Value": {
+        "Fn::GetAtt": [
+          "{{ resource_name }}",
+          "InstanceId"
+        ]
+      }
+    },
+    "InnerIp": {
+      "Value": {
+        "Fn::GetAtt": [
+          "{{ resource_name }}",
+          "InnerIp"
+        ]
+      }
+    },
+    "PublicIp": {
+      "Value": {
+        "Fn::GetAtt": [
+          "{{ resource_name }}",
+          "PublicIp"
+        ]
+      }
+    }
+  }
+}
