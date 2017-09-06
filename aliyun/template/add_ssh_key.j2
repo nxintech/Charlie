@@ -1,0 +1,17 @@
+{
+  "ROSTemplateFormatVersion": "2015-09-01",
+  "Description": "add ansible ssh key",
+   "Resources": {
+      "SSHKeyPairAttachment": {
+          "Type": "ALIYUN::ECS::SSHKeyPairAttachment",
+          "Properties": {
+            "KeyPairName": "生产ansible",
+            "InstanceIds": [
+           {% for instance in instance %}
+            "{{ instance }}"{% if not index.last %},{% endif %}
+           {% endfor%}
+            ]
+          }
+      }
+   }
+}

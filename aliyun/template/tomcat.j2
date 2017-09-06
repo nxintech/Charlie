@@ -1,54 +1,33 @@
 {
   "ROSTemplateFormatVersion": "2015-09-01",
-  "Description": "创建一个按量付费的ecs实例和一个安全组",
-
-  "Parameters": {
-    "ImageId": {
-      "Type": "String",
-      "Default": "{{ image_id }}",
-      "Description": "镜像文件ID"
-    },
-    "InstanceType": {
-      "Type": "String",
-      "Description": "实例的资源规格",
-      "Default": "ecs.s3.large",
-      "AllowedValues": [
-      {% for type in instance_types -%}
-        "{{ type }}"{% if not loop.last %},{% endif %}
-      {% endfor -%}
-      ]
-    },
-    "SecurityGroupName": {
-      "Type": "String",
-      "Default": "ros",
-      "Description": "安全组名称"
-    }
-  },
-
+  "Description": "创建一个ecs实例",
   "Resources": {
     "{{ resource_name }}": {
       "Type": "ALIYUN::ECS::Instance",
       "Properties": {
-        "ImageId": {
-          "Ref": "ImageId"
-        },
-        "InstanceType": {
-          "Ref": "InstanceType"
-        },
-        "SecurityGroupId": {
-          "Fn::GetAtt": [
-            "SecurityGroup",
-            "SecurityGroupId"
-          ]
-        }
-      }
-    },
-    "SecurityGroup": {
-      "Type": "ALIYUN::ECS::SecurityGroup",
-      "Properties": {
-        "SecurityGroupName": {
-          "Ref": "SecurityGroupName"
-        }
+        "ImageId": "{{ image_id }}",
+        {% if instance_type -%}
+        "InstanceType": "{{ instance_type }}",
+        {% else -%}
+        "InstanceType": "ecs.sn2.medium",
+        {%- endif %}
+        "Password": "{{ password }}",
+        "HostName": "{{ hostname }}",
+        "AllocatePublicIP": false,
+        "PrivateIpAddress": "{{ private_ip_addr }}",
+        "IoOptimized": "optimized", {# none|optimized #}
+        "SystemDiskCategory": "cloud_ssd", {# cloud|cloud_efficiency|cloud_ssd|ephemeral_ssd#}
+        "Tags": [{"Key":"project_id","Value":"{{ project_id }}"}],
+        "ZoneId": "{{ zone_id }}",
+        "VpcId":"{{ vpc_id }}",
+        "VSwitchId":"{{ vswitch_id }}",
+        "SecurityGroupId": "{{ security_group_id }}",
+        "DiskMappings": [{
+            "Size": "100",
+            "Category": "cloud"
+        }],
+        "InstanceChargeType": "Prepaid",
+        "Period": {{ period }},
       }
     }
   },
@@ -56,26 +35,17 @@
   "Outputs": {
     "InstanceId": {
       "Value": {
-        "Fn::GetAtt": [
-          "{{ resource_name }}",
-          "InstanceId"
-        ]
+        "Fn::GetAtt": ["{{ resource_name }}", "InstanceId"]
       }
     },
     "InnerIp": {
       "Value": {
-        "Fn::GetAtt": [
-          "{{ resource_name }}",
-          "InnerIp"
-        ]
+        "Fn::GetAtt": ["{{ resource_name }}", "InnerIp"]
       }
     },
-    "PublicIp": {
+    "HostName": {
       "Value": {
-        "Fn::GetAtt": [
-          "{{ resource_name }}",
-          "PublicIp"
-        ]
+        "Fn::GetAtt": ["{{ resource_name }}", "HostName"]
       }
     }
   }

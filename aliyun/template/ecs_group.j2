@@ -1,0 +1,17 @@
+{
+"ROSTemplateFormatVersion": "2015-09-01",
+"Resources": {
+    "InstanceGroup": {
+        "Type": "ALIYUN::ECS::InstanceGroup",
+        "Properties": {
+            "MinAmount": 2,
+            "MaxAmount": 2,
+            "NetworkType": "vpc",
+            "InstanceName": "{{ instance_name }}",
+            "VpcId": "{{ vpc_id }}",
+            "VSwitchId": "{{ vswitch_id }}"
+        }
+    }
+  },
+
+}
