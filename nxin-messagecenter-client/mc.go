@@ -1,16 +1,16 @@
 package main
 
 import (
-	"os"
-	"fmt"
-	"time"
-	"strconv"
+	"crypto/md5"
 	"encoding/hex"
 	"encoding/xml"
-	"crypto/md5"
-	"net/http"
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
 )
 
 type ShortMessage struct {
@@ -24,19 +24,19 @@ type ShortMessage struct {
 }
 
 /* Global variables must define by var */
-var api = "http://xxxx.nxin.com/message/sendsmsCommonNxin";
+var api = "http://xxxx.nxin.com/message/sendsmsCommonNxin"
 var secret = "xxxx"
 var sys_id = ""
 
 func genXml(message string, phones string) string {
 	data := &ShortMessage{
-		SendSort: "SMS",
-		SendType: "COMMON_GROUP",
+		SendSort:             "SMS",
+		SendType:             "COMMON_GROUP",
 		IsSwitchChannelRetry: 1,
-		IsGroup: 1,
-		PhoneNumber: phones,
-		Message: message,
-		Remarks: sys_id,
+		IsGroup:              1,
+		PhoneNumber:          phones,
+		Message:              message,
+		Remarks:              sys_id,
 	}
 	bytes, _ := xml.Marshal(data) // []byte
 	return string(bytes)
@@ -69,11 +69,11 @@ func sendSmsMessage(message string, phones string, debug bool) {
 	query.Add("accessToken", token)
 	query.Add("businessChannel", "OTHERS")
 	req.URL.RawQuery = query.Encode()
-	if(debug) {
+	if debug {
 		println(req.URL.String())
 	}
 
-	resp, err :=client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -84,14 +84,14 @@ func sendSmsMessage(message string, phones string, debug bool) {
 
 func main() {
 	args_len := len(os.Args)
-	if ( args_len < 3 || args_len > 4) {
+	if args_len < 3 || args_len > 4 {
 		fmt.Println(errors.New("only support two or three arguments"))
 		os.Exit(1)
 	}
 	message := os.Args[1]
 	phones := os.Args[2]
 	debug := false
-	if (args_len == 4) {
+	if args_len == 4 {
 		debug = true
 	}
 	sendSmsMessage(message, phones, debug)
