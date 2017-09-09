@@ -7,10 +7,11 @@ from aliyunsdkros.request.v20150901 import \
 from aliyunsdkvpc.request.v20160428 import \
     DescribeVSwitchesRequest
 from aliyunsdkecs.request.v20140526 import \
+    DescribeZonesRequest, \
     DescribeInstanceTypesRequest, \
     DescribeSecurityGroupsRequest
 
-pp = pprint.PrettyPrinter(indent=4)
+pp = pprint.PrettyPrinter(indent=2)
 
 access_key = ''
 access_key_secret = ''
@@ -24,6 +25,11 @@ pp.pprint(json.loads(body.decode("utf-8")))
 # VSwitch
 req = DescribeVSwitchesRequest.DescribeVSwitchesRequest()
 req.set_query_params({'PageSize': 50})
+body = client.do_action_with_exception(req)
+pp.pprint(json.loads(body.decode("utf-8")))
+
+# zone
+req = DescribeZonesRequest.DescribeZonesRequest()
 body = client.do_action_with_exception(req)
 pp.pprint(json.loads(body.decode("utf-8")))
 
