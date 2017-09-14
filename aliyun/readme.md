@@ -10,6 +10,8 @@ pip install aliyun-python-sdk-ros
 buf fix https://github.com/aliyun/aliyun-openapi-python-sdk/issues/22
 
 # Client
+ues Python > 3.5
+
 ```python
 from aliyun.client import Instance, Aliyun
 

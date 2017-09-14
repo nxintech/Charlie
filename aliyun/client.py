@@ -1,20 +1,16 @@
+import re
 import json
 import base64
-import random
 import ipaddress
 
-import re
+
 from aliyunsdkcore.client import AcsClient
-from aliyunsdkros.request.v20150901 import \
-    DescribeRegionsRequest
 from aliyunsdkvpc.request.v20160428 import \
     DescribeVSwitchAttributesRequest
 from aliyunsdkecs.request.v20140526 import \
     DescribeZonesRequest, \
     CreateInstanceRequest, \
     DescribeImagesRequest, \
-    DescribeInstanceTypesRequest, \
-    DescribeSecurityGroupsRequest, \
     DescribeSecurityGroupAttributeRequest
 
 
@@ -123,7 +119,8 @@ class Instance(object):
         :param period: pay months, only works when instance_charge_type is "PrePaid".
         :param io_optimized: "optimized" | "none".
         :param userdata: init script when instance created, value must be encoded by ase64.
-            """
+        """
+
         self.zone(zone)
         self.vswitch(vswitch)
         self.security_group(security_group)
