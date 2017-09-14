@@ -53,12 +53,12 @@ class NotificationsDump(ConsumerMixin):
             log.info("instance create :%s" % data)
 
             # add metad data
-            endpiont = "/nodes/{}".format(instance_id)
-            res = client.mput("data{}".format(endpiont), data)
+            endpoint = "/nodes/{}".format(instance_id)
+            res = client.mput("data{}".format(endpoint), data)
             log.info("metad put instance :%s, result: %s" % (instance_id, res))
 
             # add metad mapping
-            mapping = {data["hostname"]: {"node": endpiont}}
+            mapping = {data["hostname"]: {"node": endpoint}}
             res = client.mput("mapping", mapping)
             log.info("metad put mapping :%s, result: %s" % (mapping, res))
 
@@ -68,8 +68,8 @@ class NotificationsDump(ConsumerMixin):
             log.info('instance delete : %s' % instance_id)
 
             # delete metad data
-            endpiont = "/nodes/{}".format(instance_id)
-            res = client.mdelete("data{}".format(endpiont))
+            endpoint = "/nodes/{}".format(instance_id)
+            res = client.mdelete("data{}".format(endpoint))
             log.info('metad data delete: %s, result: %s' % (instance_id, res))
 
             # delete metad mapping
