@@ -353,10 +353,10 @@ class Aliyun(object):
         req = self.prepare_instance_create_request(zone, instance)
         res = self.__do_request(req)
 
-        # TODO
+        cb_res = None
         if callback:
-            self.instance_run_callback(callback)
-        return res
+            cb_res = self.handle_callback(callback, c)
+        return res, cb_res
 
     def prepare_instance_create_request(self, zone, instance):
         c = instance.config
@@ -386,8 +386,8 @@ class Aliyun(object):
 
         return request
 
-    def instance_run_callback(self, callback):
-        pass
+    def handle_callback(self, callback, *arg, **kwargs):
+        return callback(arg, kwargs)
 
 
 def check_resource_types(zone):

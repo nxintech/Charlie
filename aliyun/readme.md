@@ -1,7 +1,10 @@
 # SDK
 Python SDK install
 ```
+# py2
 pip install aliyun-python-sdk-core
+# py3
+pip install aliyun-python-sdk-core-v3
 pip install aliyun-python-sdk-ecs
 pip install aliyun-python-sdk-vpc
 pip install aliyun-python-sdk-ros
