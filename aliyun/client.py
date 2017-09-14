@@ -3,7 +3,6 @@ import json
 import base64
 import ipaddress
 
-
 from aliyunsdkcore.client import AcsClient
 from aliyunsdkvpc.request.v20160428 import \
     DescribeVSwitchAttributesRequest
@@ -177,11 +176,11 @@ class Instance(object):
     def __request_image(self, image_id):
         req = DescribeImagesRequest.DescribeImagesRequest()
         req.set_query_params({'PageSize': 50})
-        req.set_query_params({'ImageId': "image_id"})
+        req.set_query_params({'ImageId': image_id})
         body = self.client.do_action_with_exception(req)
         res = json.loads(body.decode("utf-8"))
         if res['TotalCount'] == 0:
-            raise ValueError("ImageId <%s> not found" % image_id)
+            raise ValueError("ImageId \"%s\" not found" % image_id)
 
     @config("HostName", not_none=True)
     def hostname(self, name):
@@ -210,18 +209,16 @@ class Instance(object):
     @config("PrivateIpAddress", depend="VSwitchId")
     def private_ip_address(self, ip):
         self.check_private_ip_address(self.config["VSwitchId"], ip)
-
         return ip
 
     def check_private_ip_address(self, vswitch_id, ip):
-        sg = self.__request_security_group(vswitch_id)
+        sg = self.__request_vswitch(vswitch_id)
         network = sg['CidrBlock']
         if ipaddress.ip_address(ip) not in ipaddress.ip_network(network):
             raise ValueError("IP<%s> not match network <%s>" % (ip, network))
 
     @config("InstanceType", not_none=True)
     def instance_type(self, instance_type):
-        check_instance_type(self.zone, self.is_io_optimized, instance_type)
         return instance_type
 
     @config("InternetChargeType", not_none=True)
@@ -277,11 +274,9 @@ class Instance(object):
             self.__add_data_disk(category, size)
 
     def __add_system_disk(self, category, size):
-        # check_system_disk_categories(self.zone, self.is_io_optimized, category)
         self.system_disk = Disk(category, size)
 
     def __add_data_disk(self, category, size):
-
         self.data_disks.append(Disk(category, size))
 
     def add_tag(self, key, value):
@@ -333,10 +328,10 @@ class Aliyun(object):
 
     def __request_zones(self):
         req = DescribeZonesRequest.DescribeZonesRequest()
-        return self.__do_request(req)
+        result = self.__do_request(req)["Zones"]["Zone"]
+        return result
 
     def __do_request(self, req):
-        self.client.do_action_with_exception(req)
         body = self.client.do_action_with_exception(req)
         return json.loads(body.decode("utf-8"))
 
@@ -367,7 +362,7 @@ class Aliyun(object):
         for k, v in c.items():
             request.add_query_param(k, v)
 
-        check_system_disk_categories(zone, instance.is_io_optimized, instance.system_disk)
+        check_system_disk_categories(zone, instance.is_io_optimized, instance.system_disk.category)
         request.add_query_param('SystemDisk.Category', instance.system_disk.category)
         request.add_query_param('SystemDisk.Size', instance.system_disk.size)
 
@@ -405,9 +400,10 @@ def check_system_disk_categories(zone, is_optimized, disk_category):
     for resource_info in zone['AvailableResources']['ResourcesInfo']:
         if resource_info['IoOptimized'] == is_optimized:
             supported = resource_info['SystemDiskCategories']['supportedSystemDiskCategory']
-            if disk_category not in supported:
-                raise ValueError("SystemDiskCategory <%s> not in [%s] in Zone<%s>" %
-                                 (disk_category, ",".join(supported), zone_id))
+            if disk_category in supported:
+                return
+    raise ValueError("SystemDiskCategory \"%s\" not support in Zone \"%s\"." %
+                     (disk_category, zone_id))
 
 
 def check_data_disk_categories(zone, is_optimized, disk_category):
@@ -415,9 +411,10 @@ def check_data_disk_categories(zone, is_optimized, disk_category):
     for resource_info in zone['AvailableResources']['ResourcesInfo']:
         if resource_info['IoOptimized'] == is_optimized:
             supported = resource_info['DataDiskCategories']['supportedDataDiskCategory']
-            if disk_category not in supported:
-                raise ValueError("DataDiskCategory <%s> not in [%s] in Zone<%s>" %
-                                 (disk_category, ",".join(supported), zone_id))
+            if disk_category in supported:
+                return
+    raise ValueError("DataDiskCategory \"%s\" not support in Zone \"%s\"." %
+                     (disk_category, zone_id))
 
 
 def check_instance_type(zone, io_optimized, instance_type):
@@ -425,9 +422,10 @@ def check_instance_type(zone, io_optimized, instance_type):
     for resource_info in zone['AvailableResources']['ResourcesInfo']:
         if resource_info['IoOptimized'] == io_optimized:
             supported = resource_info['InstanceTypes']['supportedInstanceType']
-            if instance_type not in supported:
-                raise ValueError("InstanceType <%s> not in [%s] in Zone<%s>" %
-                                 (instance_type, ",".join(supported), zone_id))
+            if instance_type in supported:
+                return
+    raise ValueError("InstanceType \"%s\" not  in Zone \"%s\"." %
+                     (instance_type, zone_id))
 
 
 def password_strong_check(p):
