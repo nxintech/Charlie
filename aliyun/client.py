@@ -49,7 +49,7 @@ class Disk(object):
 
     @size.setter
     def size(self, size):
-        if 500 < size < 40:
+        if 500 < size or size < 40:
             raise ValueError("Disk size should between 40~500.")
         self.__size = size
 
