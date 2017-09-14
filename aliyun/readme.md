@@ -29,7 +29,7 @@ instance.new_instance(
     hostname="te-st.produce.yz",
     password="Xxx",
     private_ip_address=None,
-    instance_type="ecs.sn2.medium",  # 2C4G
+    instance_type="ecs.sn2.medium",  # 2c8g ecs.sn2.medium | 4c8g ecs.sn1.large
     instance_charge_type="PrePaid",
     period=1,
     internet_charge_type="PayByTraffic",
@@ -45,6 +45,37 @@ res = ali.create_instance(instance)
 print(res)
 ```
 
+# ROS
+```python
+import json
+from jinja2 import Environment, FileSystemLoader
+from aliyunsdkcore.client import AcsClient
+from aliyunsdkros.request.v20150901 import CreateStacksRequest
+
+env = Environment(loader=FileSystemLoader('template'))
+
+template = env.get_template('tomcat.j2')
+stack = template.render(
+    resource_name='tomcat7',
+    image_id="",
+    password="",
+    hostname="test.nxin.ali",
+    private_ip_addr='10.112.254.1',
+    project_id='ceshi',
+    zone_id='cn-beijing-a',
+    vpc_id="",
+    vswitch_id="",
+    security_group_id="",
+    period=1)
+    
+# create stack
+client = AcsClient("access_key", "access_key_secret", 'cn-beijing')
+req = CreateStacksRequest.CreateStacksRequest()
+req.set_headers({'x-acs-region-id': 'cn-beijing'})
+req.set_content('{"Name": "create_ecs_tomcat","TimeoutMins": 60,"Template": %s}' % stack)
+body = client.do_action_with_exception(req)
+print(json.loads(body.decode("utf-8")))
+```
 
 # API
 ECS
