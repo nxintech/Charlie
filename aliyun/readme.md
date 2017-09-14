@@ -9,8 +9,7 @@ pip install aliyun-python-sdk-ecs
 pip install aliyun-python-sdk-vpc
 pip install aliyun-python-sdk-ros
 ```
-
-buf fix https://github.com/aliyun/aliyun-openapi-python-sdk/issues/22
+you need fix bug before run code, see https://github.com/aliyun/aliyun-openapi-python-sdk/issues/22
 
 # Client
 ues Python > 3.5
