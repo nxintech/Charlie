@@ -8,8 +8,10 @@ from aliyunsdkvpc.request.v20160428 import \
     DescribeVSwitchesRequest
 from aliyunsdkecs.request.v20140526 import \
     DescribeZonesRequest, \
+    DescribeImagesRequest, \
     DescribeInstanceTypesRequest, \
-    DescribeSecurityGroupsRequest
+    DescribeSecurityGroupsRequest, \
+    DescribeSecurityGroupAttributeRequest
 
 pp = pprint.PrettyPrinter(indent=2)
 
@@ -39,8 +41,21 @@ req.set_query_params({'PageSize': 50})
 body = client.do_action_with_exception(req)
 pp.pprint(json.loads(body.decode("utf-8")))
 
+# SecurityGroup id
+req = DescribeSecurityGroupAttributeRequest.DescribeSecurityGroupAttributeRequest()
+req.set_SecurityGroupId("")
+body = client.do_action_with_exception(req)
+pp.pprint(json.loads(body.decode("utf-8")))
+
 # InstanceType
 req = DescribeInstanceTypesRequest.DescribeInstanceTypesRequest()
 req.set_query_params({'PageSize': 50})
+body = client.do_action_with_exception(req)
+pp.pprint(json.loads(body.decode("utf-8")))
+
+# ImageId
+req = DescribeImagesRequest.DescribeImagesRequest()
+req.set_query_params({'PageSize': 10})
+req.set_query_params({'ImageId': ""})
 body = client.do_action_with_exception(req)
 pp.pprint(json.loads(body.decode("utf-8")))
