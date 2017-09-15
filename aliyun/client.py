@@ -335,7 +335,7 @@ class Aliyun(object):
         body = self.client.do_action_with_exception(req)
         return json.loads(body.decode("utf-8"))
 
-    def create_instance(self, instance, callback=None):
+    def create_instance(self, instance):
         """
         :param Instance instance: class Instance
         :param callback: callback function run after instance creation successfully.
@@ -348,10 +348,7 @@ class Aliyun(object):
         req = self.prepare_instance_create_request(zone, instance)
         res = self.__do_request(req)
 
-        cb_res = None
-        if callback:
-            cb_res = self.handle_callback(callback, c)
-        return res, cb_res
+        return res
 
     def prepare_instance_create_request(self, zone, instance):
         c = instance.config
@@ -380,9 +377,6 @@ class Aliyun(object):
             index += 1
 
         return request
-
-    def handle_callback(self, callback, *arg, **kwargs):
-        return callback(arg, kwargs)
 
 
 def check_resource_types(zone):

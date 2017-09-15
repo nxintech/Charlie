@@ -39,4 +39,4 @@ class JumpServer(object):
 
 if __name__ == "__main__":
     js = JumpServer("your username", "your passowrd")
-    print js.add_resource("host1", "root", "root123", 22)
+    print(js.add_resource("host1", "root", "root123", 22))

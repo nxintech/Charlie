@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 import requests
 
-Domain = "http://proj.p.nxin.com"
+Domain = "http://proj.nxin.com"
 
 
 def get_all():
@@ -47,27 +47,27 @@ def add_project(data, sync=False):
 
 
 # test
-print(get_all())
+# print(get_all())
 print(get_project_by_name("zntapi"))
 
 
-data = {
-    "id": "",
-    "appId": "999",
-    "name": "test_fuck",
-    "description": "test",
-    "repo": "",
-    "repoType": "1",
-    "buildType": "1",
-    "moduleName": "",
-    "task": "",
-    "script": "",
-    "ip": ""
-}
-
-print(add_project(
-    {
-        "appId": 999,
-        "name": "test_project",
-        "buildType": 1
-    }, False))
+# data = {
+#     "id": "",
+#     "appId": "999",
+#     "name": "test_fuck",
+#     "description": "test",
+#     "repo": "",
+#     "repoType": "1",
+#     "buildType": "1",
+#     "moduleName": "",
+#     "task": "",
+#     "script": "",
+#     "ip": ""
+# }
+#
+# print(add_project(
+#     {
+#         "appId": 999,
+#         "name": "test_project",
+#         "buildType": 1
+#     }, False))
