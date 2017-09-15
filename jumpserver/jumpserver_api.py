@@ -1,18 +1,17 @@
 # -*- coding:utf-8 -*-
 import requests
 
-URL = "http://jump.t.nxin.com/"
-
 
 class JumpServer(object):
-    def __init__(self, username, password):
+    def __init__(self, username, password, url="http://jump.t.nxin.com/"):
         self._cookie = None
         self.username = username
         self.password = password
+        self.url = url
 
     def get_cookie(self):
         if not self._cookie:
-            url = URL + "login/"
+            url = self.url + "login/"
             data = {
                 "username": self.username,
                 "password": self.password
@@ -23,7 +22,7 @@ class JumpServer(object):
 
     def add_resource(self, hostname, username, password,
                      port, ip=None, group=None, is_active=1):
-        url = URL + "jasset/asset/add/"
+        url = self.url + "jasset/asset/add/"
         data = {
             "hostname": hostname,
             "ip": ip,
