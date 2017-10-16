@@ -50,7 +50,6 @@ curl -X POST 127.0.0.1:9090/-/reload
 check
 ```
 curl 127.0.0.1:9090/api/v1/targets |grep openresty
-<<<<<<< HEAD
 ```
 
 # metric
