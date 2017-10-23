@@ -92,3 +92,11 @@ https://help.aliyun.com/document_detail/25610.html?spm=5176.doc25485.2.72.KgxL9O
 ZoneType
 
 https://help.aliyun.com/document_detail/25640.html?spm=5176.doc25610.2.2.AIaWsG
+
+# Ansible
+set `access_key` `access_key_secret` and `region_id` before run ansible-inventory.py
+```
+pip install aliyun-python-sdk-ecs
+wget https://raw.githubusercontent.com/nxintech/Charlie/master/aliyun/ansible-inventory.py
+python ansible-inventory.py --list
+```
