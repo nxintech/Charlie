@@ -61,7 +61,7 @@ def is_cache_valid():
         current_time = time()
         return (mod_time + cache_max_age) > current_time
 
-    return False
+    write_cache()
 
 
 def write_cache():
