@@ -92,7 +92,7 @@ def parse_args():
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--list', action='store_true',
                        help='List active servers')
-    group.add_argument('--host', help='List details about the specific host')
+    group.add_argument('--host', help='List details about the specific hostname')
     return parser.parse_args()
 
 
@@ -104,5 +104,6 @@ if __name__ == '__main__':
         refresh()
         print(json.dumps(index, indent=2))
     elif args.host:
+        refresh()
         host_vars = index['_meta']['hostvars'][args.host] or {}
         print(json.dumps(host_vars, indent=2))
