@@ -76,6 +76,31 @@ body = client.do_action_with_exception(req)
 print(json.loads(body.decode("utf-8")))
 ```
 
+# Inventory
+ansible dynamic inventory via aliyun
+```
+python inventory.py --host hostname
+python inventory.py --list
+```
+查询的主机信息保存到缓存文件(失效时间24小时)，不必每次去API查询，强制刷新缓存
+```
+python inventory.py --refresh 
+```
+--list 支持过滤 ECS InstanceAttributesType
+```
+python inventory.py --list -e OSType=windows
+python inventory.py --list -e Status=Running
+
+# regx
+python inventory.py --list -e OSType=lin
+python inventory.py --list -e InstanceTypeFamily=ecs.sn2
+python inventory.py --list -e PrivateIpAddress=10.112.17
+
+# tags
+python inventory.py --list --tag service=tomcat
+python inventory.py --list --tag project=农信金融
+```
+
 # API
 ECS
 
