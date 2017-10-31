@@ -76,16 +76,28 @@ body = client.do_action_with_exception(req)
 print(json.loads(body.decode("utf-8")))
 ```
 
-# Inventory
+# Ansible dynamic inventory
 ansible dynamic inventory via aliyun
+
+set `access_key` `access_key_secret` and `region_id` in inventory.py
+ and `pip install aliyun-python-sdk-ecs`
+
+查询的主机信息保存到缓存文件(失效时间24小时)，不必每次去API查询
+
+
+根据主机名查询主机信息
 ```
 python inventory.py --host hostname
-python inventory.py --list
 ```
-查询的主机信息保存到缓存文件(失效时间24小时)，不必每次去API查询，强制刷新缓存
+强制刷新缓存
 ```
 python inventory.py --refresh 
 ```
+列出所有主机
+```
+python inventory.py --list
+```
+
 --list 支持过滤 ECS InstanceAttributesType
 ```
 python inventory.py --list -e OSType=windows
@@ -117,11 +129,3 @@ https://help.aliyun.com/document_detail/25610.html?spm=5176.doc25485.2.72.KgxL9O
 ZoneType
 
 https://help.aliyun.com/document_detail/25640.html?spm=5176.doc25610.2.2.AIaWsG
-
-# Ansible
-set `access_key` `access_key_secret` and `region_id` before run ansible-inventory.py
-```
-pip install aliyun-python-sdk-ecs
-wget https://raw.githubusercontent.com/nxintech/Charlie/master/aliyun/ansible-inventory.py
-python ansible-inventory.py --list
-```
