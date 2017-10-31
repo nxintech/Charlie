@@ -121,7 +121,7 @@ def tag_filter(cache, tag):
         for tagkv in host["aliyun"]["Tags"]["Tag"]:
             tagk, tagv = tagkv["TagKey"], tagkv["TagValue"]
             if key == tagk and value == tagv:
-                result[region_id].append(hostname)
+                result["%s=%s" % (key, value)].append(hostname)
                 result['_meta']['hostvars'][hostname] = host
                 break
 
