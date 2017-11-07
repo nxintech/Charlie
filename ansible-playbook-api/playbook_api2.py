@@ -44,7 +44,8 @@ class PlayBook(object):
         """
         self.pbex = None
         self.options = Options(private_key_file=private_key_file, connection='smart', forks=10, timeout=10,
-                               verbosity=0, check=False, listtags=False, listtasks=False, listhosts=False, syntax=False,
+                               verbosity=0, check=False,
+                               listtasks=False, listhosts=False, syntax=False,
                                subset=None, module_path=None, become=None, become_user=None, become_method='sudo')
 
         # initialize needed objects
