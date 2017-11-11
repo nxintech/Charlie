@@ -1,11 +1,12 @@
-#!/usr/bin/env python
-# fork from https://github.com/ansible/ansible/blob/devel/contrib/inventory/openstack.py
 import argparse
 import collections
 import os
 import sys
 import time
 from distutils.version import StrictVersion
+
+# fork from https://github.com/ansible/ansible/blob/devel/contrib/inventory/openstack.py
+# add host_ip_filter function
 
 try:
     import json
@@ -80,6 +81,7 @@ def append_hostvars(hostvars, groups, key, server, namegroup=False):
     for group in get_groups_from_server(server, namegroup=namegroup):
         groups[group].append(key)
 
+
 def host_ip_filter(server, ip_prefix):
     for name, networks in server['addresses'].items():
         for network in networks:
@@ -106,10 +108,10 @@ def get_host_groups_from_cloud(inventory):
 
         if 'interface_ip' not in server:
             continue
-            
+
         if host_ip_filter(server, '10.211'):
             firstpass[server['name']].append(server)
-        # firstpass[server['name']].append(server)
+            # firstpass[server['name']].append(server)
     for name, servers in firstpass.items():
         if len(servers) == 1 and use_hostnames:
             append_hostvars(hostvars, groups, name, servers[0])
