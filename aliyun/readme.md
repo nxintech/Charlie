@@ -81,6 +81,8 @@ ansible dynamic inventory via aliyun
 
 set `access_key` `access_key_secret` and `region_id` in inventory.py
  and `pip install aliyun-python-sdk-ecs`
+ 
+require `git` command installed
 
 查询的主机信息保存到缓存文件(失效时间24小时)，不必每次去API查询
 
