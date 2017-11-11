@@ -41,18 +41,23 @@ def get_instances():
     total_count = 0
 
     while page_number == 1 or count < total_count:
-        req = DescribeInstancesRequest.DescribeInstancesRequest()
-        req.add_query_param('PageSize', 100)
-        req.add_query_param('PageNumber', page_number)
-        body = client.do_action_with_exception(req)
-        data = json.loads(body.decode("utf-8"))
+        request(page_number)
         total_count = data['TotalCount']
         instances = data['Instances']['Instance']
+
+        for instance in instances:
+            yield instance
+
         count += len(instances)
         page_number += 1
 
-        for instance in data['Instances']['Instance']:
-            yield instance
+
+def request(page):
+    req = DescribeInstancesRequest.DescribeInstancesRequest()
+    req.add_query_param('PageSize', 100)
+    req.add_query_param('PageNumber', page)
+    body = client.do_action_with_exception(req)
+    return json.loads(body.decode("utf-8"))
 
 
 def write_cache():
