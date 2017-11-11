@@ -98,7 +98,8 @@ python inventory.py --refresh
 python inventory.py --list
 ```
 
---list 支持过滤 ECS InstanceAttributesType
+--list 支持过滤 ECS InstanceAttributesType, 注意此功能并非给 ansible dynamic inventory 使用，
+仅仅为了方便查找主机
 ```
 python inventory.py --list -e OSType=windows
 python inventory.py --list -e Status=Running
@@ -112,6 +113,14 @@ python inventory.py --list -e PrivateIpAddress=10.112.17
 python inventory.py --list --tag service=tomcat
 python inventory.py --list --tag project=农信金融
 ```
+
+主机按照 ECS `tag value` 分组，例如 ECS 的`Tags: [{key: "project", value: "农信金融"}, {key: "service", value: "tomcat"}]`
+```
+ansible 农信金融 -i inventory.py -m ping
+ansible tomcat -i inventory.py -m ping
+```
+
+
 
 # API
 ECS
