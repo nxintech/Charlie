@@ -101,10 +101,11 @@ python inventory.py --list
 --list 支持过滤 ECS InstanceAttributesType, 注意此功能并非给 ansible dynamic inventory 使用，
 仅仅为了方便查找主机
 ```
+# expression for ECS InstanceAttributes
 python inventory.py --list -e OSType=windows
 python inventory.py --list -e Status=Running
 
-# regx
+# expression for regx match
 python inventory.py --list -e OSType=lin
 python inventory.py --list -e InstanceTypeFamily=ecs.sn2
 python inventory.py --list -e PrivateIpAddress=10.112.17
