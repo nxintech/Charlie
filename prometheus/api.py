@@ -32,12 +32,22 @@ class Wrapper(object):
 
         uri = urljoin(self.prefix, "query")
         resp = requests.get(uri, params=params)
-        print(resp.url)
+        return parse_result(resp)
+
+    def query_range(self, selector, start, end, step):
+        uri = urljoin(self.prefix, "query_range")
+        params = {
+            "query": selector,
+            "start": start,
+            "end": end,
+            "step": step
+        }
+        resp = requests.get(uri, params=params)
         return parse_result(resp)
 
 
 FORMAT = "%Y-%m-%d %H:%M:%S"
 query = Wrapper("http://prometheus.nxin.com/api/v1/")
 
-r = query.query("mysql_global_status_bytes_received{instance=~\"mysql-5.6-master.*\"}")
+r = query.query("nginx_http_requests_total{host=\"zjs.nxin.com\"}", time="2017-11-15T13:00:00+08:00")
 print(r)
