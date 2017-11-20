@@ -6,7 +6,6 @@ import argparse
 import datetime
 from collections import defaultdict
 
-
 from zstack.zssdk import configure, \
     LogInByUserAction, QueryVmInstanceAction, \
     QuerySystemTagAction, QueryUserTagAction, \
@@ -81,7 +80,7 @@ def get_instances(limit=100):
 def inventory_data():
     result = defaultdict(list)
     result['_meta'] = {'hostvars': {}}
-    maps = {}  # hostname: uuid maps
+    maps = {}  # {hostname: uuid} maps
 
     for instance in get_instances():
         hostname = instance["name"]
