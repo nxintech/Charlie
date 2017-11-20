@@ -7,7 +7,7 @@ import datetime
 from collections import defaultdict
 
 
-from zstack.zssdk3 import configure, \
+from zstack.zssdk import configure, \
     LogInByUserAction, QueryVmInstanceAction, \
     QuerySystemTagAction, QueryUserTagAction, \
     AbstractAction, ParamAnnotation

@@ -228,7 +228,7 @@ class AbstractAction(object):
 
         return ''.join(elements), unresolved
 
-    def call(self, cb=None):
+    def call(self, cb=None, dict_output=False):
 
         def _return(result):
             if cb:
@@ -278,10 +278,16 @@ class AbstractAction(object):
         rsp = _json_http(uri=url, body=body, headers=headers, method=self.HTTP_METHOD, timeout=self.timeout)
 
         if rsp.status < 200 or rsp.status >= 300:
-            return _return(Obj(_http_error(rsp.status, rsp.data)))
+            if dict_output:
+                return _return(_http_error(rsp.status, rsp.data))
+            else:
+                return _return(Obj(_http_error(rsp.status, rsp.data)))
         elif rsp.status == 200 or rsp.status == 204:
             # the API completes
-            return _return(Obj(self._write_result(rsp)))
+            if dict_output:
+                return _return(self._write_result(rsp))
+            else:
+                return _return(Obj(self._write_result(rsp)))
         elif rsp.status == 202:
             # the API needs polling
             return self._poll_result(rsp, cb)
@@ -294,9 +300,9 @@ class AbstractAction(object):
             data = '{}'
 
         if rsp.status == 200:
-            return {"value": json.loads(data)}
+            return {"value": json.loads(data.decode('utf-8'))}
         elif rsp.status == 503:
-            return json.loads(data)
+            return json.loads(data.decode('utf-8'))
         else:
             raise SdkError('unknown status code[%s]' % rsp.status)
 
