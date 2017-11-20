@@ -4,3 +4,4 @@
 python inventory --list
 python inventory --host xx.teat.zs 
 ```
+sdk 做了一些修改用于适配 py3
