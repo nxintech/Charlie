@@ -1,4 +1,6 @@
 # ansible
+please it use in py3
+
 自动生成 .cache 文件， 记录 hostname 和 VmInstance uuid 的映射关系
 ```
 python inventory --list
