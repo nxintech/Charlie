@@ -86,6 +86,9 @@ def inventory_data():
         hostname = instance["name"]
         maps[hostname] = instance["uuid"]
 
+        if instance["status"] == "Deleted":
+            continue
+
         result['_meta']['hostvars'][hostname] = {
             'ansible_ssh_user': "root",
             'ansible_ssh_host': instance["vmNics"][0]["ip"],
@@ -97,6 +100,10 @@ def inventory_data():
     for tag in get_user_tags():
         for instance in get_instances():
             hostname = instance["name"]
+
+            if instance["status"] == "Deleted":
+                continue
+
             result[tag].append(hostname)
 
     return result, maps
