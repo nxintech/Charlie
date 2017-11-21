@@ -1,12 +1,12 @@
 import os
-import json
+import ujson as json
 import pickle
 import hashlib
 import argparse
 import datetime
 from collections import defaultdict
 
-from zstack.zssdk import configure, \
+from zssdk import configure, \
     LogInByUserAction, QueryVmInstanceAction, \
     QuerySystemTagAction, QueryUserTagAction, \
     AbstractAction, ParamAnnotation
@@ -20,7 +20,7 @@ def parse_date(string):
     return datetime.datetime.strptime(string, '%b %d, %Y %I:%M:%S %p')
 
 
-class LoginActionWrapper(object):
+class LoginActionWrapper:
     """
     A Zstack LogInByUserAction Wrapper which cache session uuid that
     is not expired, for avoiding allocating too much session uuid.
