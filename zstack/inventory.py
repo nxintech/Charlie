@@ -86,7 +86,7 @@ def inventory_data():
         hostname = instance["name"]
         maps[hostname] = instance["uuid"]
 
-        if instance["status"] == "Deleted":
+        if instance["state"] == "Destroyed":
             continue
 
         result['_meta']['hostvars'][hostname] = {
@@ -101,7 +101,7 @@ def inventory_data():
         for instance in get_instances():
             hostname = instance["name"]
 
-            if instance["status"] == "Deleted":
+            if instance["state"] == "Destroyed":
                 continue
 
             result[tag].append(hostname)
