@@ -25,6 +25,7 @@ class LoginActionWrapper:
     A Zstack LogInByUserAction Wrapper which cache session uuid that
     is not expired, for avoiding allocating too much session uuid.
     """
+
     def __init__(self, account, username, password):
         self.uuid = None
         self.expired = datetime.datetime.now()
@@ -62,7 +63,7 @@ def get_instances(limit=100):
     count = 0
 
     while query.start == 0 or count < total:
-        response = query.call(dict_output=True)
+        response = query.call(dict_output=True, debug=args.debug)
         if "error" in response:
             raise ValueError(response["error"]["details"])
 
@@ -114,7 +115,7 @@ def get_system_tags():
     q.conditions = ["inherent=true", "resourceType=VmInstanceVO"]
     q.fields = ["tag"]
     q.sessionId = login.get_uuid()
-    response = q.call(dict_output=True)
+    response = q.call(dict_output=True, debug=args.debug)
 
     if "error" in response:
         raise ValueError(response["error"]["details"])
@@ -128,7 +129,7 @@ def get_user_tags():
     q.conditions = ["resourceType=VmInstanceVO"]
     q.fields = ["tag"]
     q.sessionId = login.get_uuid()
-    response = q.call(dict_output=True)
+    response = q.call(dict_output=True, debug=args.debug)
 
     if "error" in response:
         raise ValueError(response["error"]["details"])
@@ -173,7 +174,7 @@ def get_host(hostname):
     q = QueryOneVmInstance()
     q.uuid = maps[hostname]
     q.sessionId = login.get_uuid()
-    response = q.call(dict_output=True)
+    response = q.call(dict_output=True, debug=args.debug)
 
     if "error" in response:
         return {}
@@ -196,6 +197,9 @@ def parse_args():
                    help='list all servers, conflict with --host')
     g.add_argument('--host',
                    help='list details about the specific hostname')
+
+    parser.add_argument('--debug', action='store_true',
+                        help='show request/response info')
 
     return parser.parse_args()
 

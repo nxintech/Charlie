@@ -228,7 +228,7 @@ class AbstractAction(object):
 
         return ''.join(elements), unresolved
 
-    def call(self, cb=None, dict_output=False):
+    def call(self, cb=None, dict_output=False, debug=False):
 
         def _return(result):
             if cb:
@@ -275,7 +275,7 @@ class AbstractAction(object):
         if not self.timeout:
             self.timeout = __config__[CONFIG_READ_TIMEOUT]
 
-        rsp = _json_http(uri=url, body=body, headers=headers, method=self.HTTP_METHOD, timeout=self.timeout)
+        rsp = _json_http(uri=url, body=body, headers=headers, method=self.HTTP_METHOD, timeout=self.timeout, debug=debug)
 
         if rsp.status < 200 or rsp.status >= 300:
             if dict_output:
@@ -329,15 +329,15 @@ class AbstractAction(object):
         if self.pollingInterval is None:
             self.pollingInterval = __config__.get(CONFIG_POLLING_INTERVAL)
 
-    def _async_poll(self, location, cb):
+    def _async_poll(self, location, cb, debug=False):
         @_exception_safe
         def _polling():
-            ret = self._sync_polling(location)
+            ret = self._sync_polling(location, debug)
             cb(ret)
 
         threading.Thread(target=_polling).start()
 
-    def _sync_polling(self, location):
+    def _sync_polling(self, location, debug=False):
         count = 0
         self._fill_timeout_parameters()
 
@@ -345,7 +345,8 @@ class AbstractAction(object):
             rsp = _json_http(
                 uri=location,
                 headers={HEADER_AUTHORIZATION: "%s %s" % (OAUTH, self.sessionId)},
-                method='GET'
+                method='GET',
+                debug=debug
             )
 
             if rsp.status not in [200, 503, 202]:
@@ -425,7 +426,8 @@ def _json_http(
         body=None,
         headers={},
         method='POST',
-        timeout=120.0
+        timeout=120.0,
+        debug=False
 ):
     pool = urllib3.PoolManager(timeout=timeout, retries=urllib3.util.retry.Retry(15))
     headers.update({'Content-Type': 'application/json', 'Connection': 'close'})
@@ -433,14 +435,16 @@ def _json_http(
     if body is not None and not isinstance(body, str):
         body = json.dumps(body).encode('utf-8')
 
-    #print('[Request]: %s url=%s, headers=%s, body=%s' % (method, uri, headers, body))
+    if debug:
+        print('[Request]: %s url=%s, headers=%s, body=%s' % (method, uri, headers, body))
     if body:
         headers['Content-Length'] = len(body)
         rsp = pool.request(method, uri, body=body, headers=headers)
     else:
         rsp = pool.request(method, uri, headers=headers)
 
-    #print('[Response to %s %s]: status: %s, body: %s' % (method, uri, rsp.status, rsp.data))
+    if debug:
+        print('[Response to %s %s]: status: %s, body: %s' % (method, uri, rsp.status, rsp.data))
     return rsp
 
 
