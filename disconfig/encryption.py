@@ -1,5 +1,9 @@
 # -*- coding:utf-8 -*-
-import sys
+
+# install on windws
+# http://www.voidspace.org.uk/python/modules.shtml#pycrypto
+# py3 https://github.com/sfbahr/PyCrypto-Wheels
+
 from Crypto.Cipher import AES
 
 BS = AES.block_size
@@ -16,4 +20,4 @@ def encode(text):
 
 def decode(encrypted):
     decrypted = unpad(cipher.decrypt(encrypted.decode('hex')))
-    print decrypted
+    print(decrypted)
