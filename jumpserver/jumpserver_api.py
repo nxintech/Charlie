@@ -43,7 +43,9 @@ class JumpServer(object):
     def search_resource(self, hostname):
         url = self.base + "jasset/asset/search/?hostname={}".format(hostname)
         res = requests.get(url=url, cookies=self.get_cookie())
-        data = res.json()[0]
+        data = res.json()
+        if not data:
+            return None, None
         resource_id = data['pk']
         resource_data = data['fields']
         return resource_id, resource_data
