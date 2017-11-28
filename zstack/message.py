@@ -1,6 +1,7 @@
 import uuid
 import json
 import redis
+import logging
 from kombu import Connection
 from kombu import Exchange
 from kombu import Queue
@@ -8,6 +9,14 @@ from kombu import binding
 from kombu.mixins import ConsumerMixin
 
 from jumpserver import JumpServer
+
+# set logger
+logger = logging.getLogger()
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(message)s'))
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
 
 # redis hash name
 api_id_name = 'ZSTACK_API_ID'
@@ -29,7 +38,7 @@ destroy_msg = 'org.zstack.header.vm.APIDestroyVmInstanceMsg'
 destroy_vm = 'org.zstack.header.vm.APIDestroyVmInstanceEvent'
 
 expunge_msg = 'org.zstack.header.vm.APIExpungeVmInstanceMsg'
-expunge_event = 'org.zstack.header.vm.APIExpungeVmInstanceEvent'
+expunge_vm = 'org.zstack.header.vm.APIExpungeVmInstanceEvent'
 
 # only delete in ZStack dashboard
 delete_vm_msg_ali = 'org.zstack.header.aliyun.ecs.APIDeleteEcsInstanceMsg'
@@ -96,17 +105,20 @@ class ZStackConsumer(ConsumerMixin):
             api_id = body['id']
             vm_uuid = body['uuid']
             db.hset(api_id_name, api_id, vm_uuid)
+            logger.info('destroy_msg: apiId {} vmUuid {}'.format(api_id, vm_uuid))
 
-        elif recover_vm in event:
-            body = event[expunge_msg]
+        elif recover_msg in event:
+            body = event[recover_msg]
             api_id = body['id']
             db.hset(api_id_name, api_id, '1')
+            logger.info('recover_msg: apiId {}'.format(api_id))
 
         elif expunge_msg in event:
             body = event[expunge_msg]
             api_id = body['id']
             vm_uuid = body['uuid']
             db.hset(api_id_name, api_id, vm_uuid)
+            logger.info('expunge_msg: apiId {} vmUuid {}'.format(api_id, vm_uuid))
 
         # aliyun
         elif delete_vm_remote_msg_ali in event:
@@ -114,6 +126,7 @@ class ZStackConsumer(ConsumerMixin):
             api_id = body['headers']['task-context']['api']
             vm_uuid = body['ecsId']
             db.hset(api_id_name, api_id, vm_uuid)
+            logger.info('aliyun_delete_remote_msg: apiId {} ecsId {}'.format(api_id, vm_uuid))
 
         message.ack()
 
@@ -134,6 +147,8 @@ class ZStackConsumer(ConsumerMixin):
                         # we need cache all VM inventory
                         # which Destroyed
                         db.hset(vm_inventory_name, vm_uuid, json.dumps(inventory))
+                        logger.info(
+                            'canonical_sestroyed: apiId {} vmUuid {}'.format(api_id, vm_uuid))
 
         message.ack()
 
@@ -149,20 +164,35 @@ class ZStackConsumer(ConsumerMixin):
         elif create_vm in event:
             body = event[create_vm]
             if body["success"]:
-                hostname, ip = parse(body["inventory"])
-                js.add_resource(hostname, 'root', ip=ip, password="no_need")
+                inventory = body["inventory"]
+                hostname, ip = parse(inventory)
+
+                if inventory['type'] != 'UserVm':
+                    logger.info('create_vm: type is not UserVm,  host {} ip {}'.format(hostname, ip))
+                    return message.ack()
+
+                if inventory['platform'] != 'Linux':
+                    logger.info('create_vm: platform is not Linux, host {} ip {} '.format(hostname, ip))
+                    return message.ack()
+
+                code = js.add_resource(hostname, 'root', "no_need", ip=ip)
+
+                logger.info('create_vm: hostname {} ip {}, status code {}'.format(hostname, ip, code))
 
         elif create_vm_ali in event:
             body = event[create_vm_ali]
             if body["success"]:
                 inventory = body['inventory']
+                # TODO aliyun check VM os Type
+
                 vm_uuid = inventory['ecsInstanceId']
                 db.hset(vm_inventory_name, vm_uuid, json.dumps(inventory))
 
                 hostname = inventory['name']
                 ip = inventory['privateIpAddress']
                 password = inventory['ecsInstanceRootPassword']
-                js.add_resource(hostname, 'root', ip=ip, password=password)
+                code = js.add_resource(hostname, 'root', password, ip=ip)
+                logger.info('aliyun_create_vm: hostname {} ip {}, status code {}'.format(hostname, ip, code))
 
         elif destroy_vm in event:
             body = event[destroy_vm]
@@ -178,10 +208,12 @@ class ZStackConsumer(ConsumerMixin):
                     # zstack inventory not in jumpserver
                     # just ignore this message
                     if asset_id is None and asset is None:
+                        logger.info('destroy_vm: hostname {}, not found in jumpserver'.format(hostname))
                         return message.ack()
 
                     asset['is_active'] = '0'
-                    js.edit_resource(asset_id, asset)
+                    code = js.edit_resource(asset_id, asset)
+                    logger.info('destroy_vm: hostname {}, status code {}'.format(hostname, code))
                 # no matter successful we need del this api id
                 db.hdel(api_id_name, api_id)
 
@@ -197,15 +229,17 @@ class ZStackConsumer(ConsumerMixin):
                     hostname, _ = parse(body["inventory"])
                     asset_id, asset = js.search_resource(hostname)
                     if asset_id is None and asset is None:
+                        logger.info(
+                            'recover_vm: hostname {}, not found in jumpserver'.format(hostname))
                         return message.ack()
 
                     asset['is_active'] = '1'
-                    js.edit_resource(asset_id, asset)
-
+                    code = js.edit_resource(asset_id, asset)
+                    logger.info('recover_vm: hostname {}, status code {}'.format(hostname, code))
                 db.hdel(api_id_name, api_id)
 
-        elif expunge_event in event:
-            body = event[expunge_event]
+        elif expunge_vm in event:
+            body = event[expunge_vm]
             api_id = body['apiId']
 
             vm_uuid = db.hget(api_id_name, api_id)
@@ -213,12 +247,17 @@ class ZStackConsumer(ConsumerMixin):
                 if body["success"]:
                     inventory = db.hget(vm_inventory_name, vm_uuid)
                     if inventory is None:
+                        logger.info('expunge_vm: vmUuid {} not in redis {}'.format(vm_uuid, vm_inventory_name))
                         return message.ack()
 
                     hostname, ip = parse(json.loads(inventory.decode('utf-8')))
-                    asset_id, _ = js.search_resource(hostname)
-                    res = js.del_resource(asset_id)
-                    # if res == 200:
+                    asset_id, asset = js.search_resource(hostname)
+                    if asset_id is None and asset is None:
+                        logger.info('expunge_vm: hostname {}, not found in jumpserver'.format(hostname))
+
+                    code = js.del_resource(asset_id)
+                    logger.info('expunge_vm: hostname {}, status code {}'.format(hostname, code))
+                    # if code == 200:
                     #     r.hdel(vm_inventory_name, vm_uuid)
 
                 db.hdel(api_id_name, api_id)
@@ -231,12 +270,18 @@ class ZStackConsumer(ConsumerMixin):
                 if body["success"]:
                     inventory = db.hget(vm_inventory_name, vm_uuid)
                     if inventory is None:
+                        logger.info('aliyun_delete_vm: vmUuid {} not in redis'.format(vm_uuid))
                         return message.ack()
 
                     hostname, ip = parse_ali(json.loads(inventory.decode('utf-8')))
-                    asset_id, _ = js.search_resource(hostname)
-                    res = js.del_resource(asset_id)
-                    # if res == 200:
+                    asset_id, asset = js.search_resource(hostname)
+                    if asset_id is None and asset is None:
+                        logger.info('aliyun_delete_vm: hostname {}, not found in jumpserver'.format(hostname))
+                        return message.ack()
+
+                    code = js.del_resource(asset_id)
+                    logger.info('aliyun_delete_vm: hostname {}, status code {}'.format(hostname, code))
+                    # if code == 200:
                     #     r.hdel(vm_inventory_name, vm_uuid)
 
                 db.hdel(api_id_name, api_id)
