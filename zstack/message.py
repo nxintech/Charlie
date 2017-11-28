@@ -147,8 +147,10 @@ class ZStackConsumer(ConsumerMixin):
                         # we need cache all VM inventory
                         # which Destroyed
                         db.hset(vm_inventory_name, vm_uuid, json.dumps(inventory))
+                        hostname, ip = parse(inventory)
                         logger.info(
-                            'canonical_sestroyed: apiId {} vmUuid {}'.format(api_id, vm_uuid))
+                            'canonical_destroyed: apiId {} vmUuid {}, hostname {}, ip {}'
+                            .format(api_id, vm_uuid, hostname, ip))
 
         message.ack()
 
