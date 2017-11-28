@@ -21,7 +21,7 @@ class JumpServer(object):
         return self._cookie
 
     def add_resource(self, hostname, username, password,
-                     port, ip=None, group=None, is_active=1):
+                     port=22, ip=None, group=None, is_active=1):
         url = self.base + "jasset/asset/add/"
         data = {
             "hostname": hostname,
@@ -43,6 +43,10 @@ class JumpServer(object):
     def search_resource(self, hostname):
         url = self.base + "jasset/asset/search/?hostname={}".format(hostname)
         res = requests.get(url=url, cookies=self.get_cookie())
+
+        if res.status_code != 200:
+            return None, None
+
         data = res.json()
         if not data:
             return None, None
