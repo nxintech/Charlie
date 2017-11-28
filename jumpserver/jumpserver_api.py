@@ -59,8 +59,10 @@ class JumpServer(object):
             res = requests.get(url=url, cookies=self.get_cookie())
 
         data = res.json()
+
         if not data:
             return None, None
+        data = data[0]
         resource_id = data['pk']
         resource_data = data['fields']
         return resource_id, resource_data
