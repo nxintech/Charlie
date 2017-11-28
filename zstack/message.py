@@ -261,7 +261,8 @@ def parse_ali(inventory):
 if __name__ == '__main__':
     url = "amqp://user:password@zstack_manager:5672"
     js = JumpServer("user", "password", base="http://jump.t.nxin.com/")
-    db = redis.Redis(host='192.168.0.1', port=6379, db=0)
+    pool = redis.ConnectionPool(host='192.168.0.1', port=6379, db=0)
+    db = redis.Redis(connection_pool=pool)
 
     with Connection(url, heartbeat=15) as conn:
         ZStackConsumer(conn).run()
