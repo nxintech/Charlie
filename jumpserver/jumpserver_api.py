@@ -1,31 +1,23 @@
 # -*- coding:utf-8 -*-
 import requests
-from urllib.parse import urlparse
 
 
 class JumpServer(object):
     def __init__(self, username, password, base="http://127.0.0.1/"):
-        self._cookie = None
+        self._cookie = self.get_cookie()
         self.username = username
         self.password = password
         self.base = base
-        self.get_cookie()
 
     @property
     def cookie(self):
-        if self._cookie is None:
-            self._cookie = self.get_cookie()
-            return self._cookie
-
         def is_expired():
-            domain = urlparse(self.base).netloc
             for cookie in self._cookie:
-                if cookie.name == domain:
+                if cookie.name == 'sessionid':
                     return cookie.is_expired()
 
         if is_expired():
             self._cookie = self.get_cookie()
-            return self._cookie
 
         return self._cookie
 
