@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 import requests
+from urllib.parse import urlparse
 
 
 class JumpServer(object):
@@ -8,24 +9,34 @@ class JumpServer(object):
         self.username = username
         self.password = password
         self.base = base
-        self._cookie = self.get_cookie()
+        self.get_cookie()
 
-    def get_cookie(self):
+    @property
+    def cookie(self):
         if self._cookie is None:
-            url = self.base + "login/"
-            data = {
-                "username": self.username,
-                "password": self.password
-            }
-            res = requests.post(url=url, data=data)
-            self._cookie = res.cookies
+            self._cookie = self.get_cookie()
+            return self._cookie
+
+        def is_expired():
+            domain = urlparse(self.base).netloc
+            for cookie in self._cookie:
+                if cookie.name == domain:
+                    return cookie.is_expired()
+
+        if is_expired():
+            self._cookie = self.get_cookie()
+            return self._cookie
+
         return self._cookie
 
-    def need_retry(self, code):
-        if code == 302:
-            # we need login again
-            self.get_cookie()
-            return True
+    def get_cookie(self):
+        url = self.base + "login/"
+        data = {
+            "username": self.username,
+            "password": self.password
+        }
+        res = requests.post(url=url, data=data)
+        return res.cookies
 
     def add_resource(self, hostname, username, password,
                      port=22, ip=None, group=None, is_active=1):
@@ -39,24 +50,17 @@ class JumpServer(object):
             "group": group,
             "is_active": is_active
         }
-        res = requests.post(url=url, data=data, cookies=self.get_cookie())
-        if self.need_retry(res.status_code):
-            res = requests.post(url=url, data=data, cookies=self.get_cookie())
+        res = requests.post(url=url, data=data, cookies=self.cookie)
         return res.status_code
 
     def del_resource(self, resource_id):
         url = self.base + "jasset/asset/del/?id={}".format(resource_id)
-        res = requests.get(url=url, cookies=self.get_cookie())
-        if self.need_retry(res.status_code):
-            res = requests.get(url=url, cookies=self.get_cookie())
+        res = requests.get(url=url, cookies=self.cookie)
         return res.status_code
 
     def search_resource(self, hostname):
         url = self.base + "jasset/asset/search/?hostname={}".format(hostname)
-        res = requests.get(url=url, cookies=self.get_cookie())
-
-        if self.need_retry(res.status_code):
-            res = requests.get(url=url, cookies=self.get_cookie())
+        res = requests.get(url=url, cookies=self.cookie)
 
         data = res.json()
 
@@ -69,9 +73,7 @@ class JumpServer(object):
 
     def edit_resource(self, resource_id, data):
         url = self.base + "jasset/asset/edit/?id={}".format(resource_id)
-        res = requests.post(url=url, data=data, cookies=self.get_cookie())
-        if self.need_retry(res.status_code):
-            res = requests.post(url=url, data=data, cookies=self.get_cookie())
+        res = requests.post(url=url, data=data, cookies=self.cookie)
         return res.status_code
 
 
