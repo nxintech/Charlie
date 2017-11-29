@@ -4,10 +4,10 @@ import requests
 
 class JumpServer(object):
     def __init__(self, username, password, base="http://127.0.0.1/"):
-        self._cookie = self.get_cookie()
         self.username = username
         self.password = password
         self.base = base
+        self._cookie = self.get_cookie()
 
     @property
     def cookie(self):
