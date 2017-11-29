@@ -39,7 +39,8 @@ class JumpServer(object):
         return res.cookies
 
     def add_resource(self, hostname, username, password,
-                     port=22, ip=None, group=None, is_active=1):
+                     port=22, ip=None, group=1, is_active=1):
+        # asset group 1 include vm, default group
         url = self.base + "jasset/asset/add/"
         data = {
             "hostname": hostname,
