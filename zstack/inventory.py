@@ -90,6 +90,7 @@ def inventory_data():
         if instance["state"] == "Destroyed":
             continue
 
+        result['all'].append(hostname)
         result['_meta']['hostvars'][hostname] = {
             'ansible_ssh_user': "root",
             'ansible_ssh_host': instance["vmNics"][0]["ip"],
