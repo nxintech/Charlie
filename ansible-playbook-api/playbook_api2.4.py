@@ -31,7 +31,15 @@ class ResultCallback(CallbackBase):
 
 
 Options = namedtuple('Options', [
-    'connection', 'forks', 'become', 'become_method', 'become_user', 'check', 'diff'])
+    'sudo', 'su', 'sudo_user', 'su_user',
+    'listtags', 'listtasks', 'listhosts',
+    'syntax', 'check',
+    'ask_pass', 'ask_su_pass', 'ask_sudo_pass', 'ask_vault_pass',
+    'connection', 'timeout', 'remote_user', 'private_key_file',
+    'module_path', 'forks',
+    'ssh_common_args', 'ssh_extra_args', 'sftp_extra_args', 'scp_extra_args',
+    'become', 'become_method', 'become_user',
+    'verbosity', 'diff'])
 
 
 class PlayBook(object):
@@ -41,14 +49,16 @@ class PlayBook(object):
         # initialize needed objects
         self.loader = DataLoader()
         self.options = Options(
-            connection='smart',
-            # module_path='/path/to/mymodules',
-            forks=100,
-            become=None,
-            become_method=None,
-            become_user=None,
-            check=False,
-            diff=False)
+            sudo=False, su=False, sudo_user=None, su_user=None,
+            listtags=False, listtasks=False, listhosts=False,
+            syntax=False, check=False,
+            ask_pass=False, ask_su_pass=False, ask_sudo_pass=False, ask_vault_pass=False,
+            connection='smart', timeout=10, remote_user=None, private_key_file=None,
+            ssh_common_args=None, ssh_extra_args=None,
+            sftp_extra_args=None, scp_extra_args=None,
+            module_path=None, forks=10,
+            become=False, become_method='sudo', become_user=None,
+            verbosity=0, diff=None)
 
         # Instantiate our ResultCallback for handling results as they come in
         self.results_callback = ResultCallback()
@@ -84,4 +94,4 @@ parser.add_argument('playbook', help='ansible playbook yaml file')
 if __name__ == '__main__':
     args = parser.parse_args()
     pb = PlayBook(inventory=args.inventory, extra_vars=args.extra_vars)
-    print(pb.run_playbook(args.playbook))
+    print(pb.run(args.playbook))
