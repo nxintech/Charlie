@@ -92,3 +92,12 @@ python inventory3.py --host 网络测试陪练机4
     ]
   }
 ```
+
+列出可用的主机组
+```
+python inventory3.py --app
+dict_keys(['tomcat', 'rabbitmq', 'svn', 'ansible', 'gitlab', 'elasticsearch', 'nexus', 'others', 'kafka', 'bind', 'haproxy', 'etcd', 'dns', 'ldap', 'openresty', 'zookeeper', 'falcon', 'memcache', 'pmm-server', 'template', 'jumpserver', 'memcacheq', 'jenkins', 'prometheus'])
+
+# use host group
+ansible tomcat -m ping
+```

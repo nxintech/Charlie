@@ -39,6 +39,17 @@ def get_instances(limit=100):
         q.start += q.limit
 
 
+def query(service=None):
+    conditions = ["type=UserVm"]
+    if service:
+        conditions.append("__userTag__~=app::{}%".format(service))
+
+    q = QueryVmInstanceAction()
+    q.conditions = conditions
+    q.fields = ["name"]
+    return q
+
+
 def inventory_data():
     result = defaultdict(list)
     result['_meta'] = {'hostvars': {}}
@@ -48,7 +59,8 @@ def inventory_data():
         hostname = instance["name"]
         maps[hostname] = instance["uuid"]
 
-        if instance["state"] == "Destroyed":
+        if instance["state"] == "Destroyed" \
+                or instance["platform"] != "Linux":
             continue
 
         result['all'].append(hostname)
@@ -60,14 +72,26 @@ def inventory_data():
         }
 
     # host aggregate by user tag
+    tasks = []
+    index = 0
     for tag in get_user_tags():
-        for instance in get_instances():
-            hostname = instance["name"]
-
-            if instance["state"] == "Destroyed":
+        if tag.startswith('app::'):
+            app, service, version = tag.split("::")
+            if service in service_cache:
                 continue
+            service_cache[service] = index
+            q = query(service=service)
+            tasks.append(client.request_action(q))
+            index += 1
 
-            result[tag].append(hostname)
+    reverse_cache = {v: k for k, v in service_cache.items()}
+    results = loop.run_until_complete(asyncio.gather(*tasks))
+
+    for i, r in enumerate(results):
+        for fields in r['value']['inventories']:
+            hostname = fields['name']
+            service = reverse_cache[i]
+            result[service].append(hostname)
 
     return result, maps
 
@@ -130,6 +154,8 @@ def parse_args():
                    help='list all servers, conflict with --host')
     g.add_argument('--host',
                    help='list details about the specific hostname')
+    parser.add_argument('--app', action='store_true',
+                        help='list all ansible hosts service')
 
     return parser.parse_args()
 
@@ -139,7 +165,7 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     client = ZStackClient(host="zstack.nxin.com", loop=loop)
     client.set_session("account", "username", "password")
-
+    service_cache = {}
     args = parse_args()
     if args.list:
         data, maps = inventory_data()
@@ -149,3 +175,7 @@ if __name__ == '__main__':
 
     if args.host:
         print(json.dumps(get_host(args.host), indent=2))
+
+    if args.app:
+        inventory_data()
+        print(service_cache.keys())
