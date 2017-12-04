@@ -155,7 +155,10 @@ def parse_args():
     g.add_argument('--host',
                    help='list details about the specific hostname')
     parser.add_argument('--app', action='store_true',
-                        help='list all ansible hosts service')
+                        help='list all ansible host group')
+
+    parser.add_argument('--show',
+                        help='show specific ansible host group')
 
     return parser.parse_args()
 
@@ -179,3 +182,7 @@ if __name__ == '__main__':
     if args.app:
         inventory_data()
         print(service_cache.keys())
+
+    if args.show:
+        data, _ = inventory_data()
+        print(data[args.show])

@@ -101,3 +101,9 @@ dict_keys(['tomcat', 'rabbitmq', 'svn', 'ansible', 'gitlab', 'elasticsearch', 'n
 # use host group
 ansible tomcat -m ping
 ```
+
+显示特定主机组
+```
+python inventory3.py  --show zookeeper
+['zookeeper02.produce.zs', 'zookeeper03.produce.zs', 'zookeeper01.produce.zs']
+```
