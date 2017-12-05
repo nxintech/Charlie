@@ -2,6 +2,7 @@ import uuid
 import json
 import redis
 import logging
+from functools import partial
 from kombu import Connection
 from kombu import Exchange
 from kombu import Queue
@@ -10,17 +11,23 @@ from kombu.mixins import ConsumerMixin
 
 from jumpserver import JumpServer
 
+# How this script works
+# create_vm_event.success ->
+#   1 store vm inventory in redis
+#   2 add vm in jump
+#
+# destroy_vm_event.success -> inactive vm in jump
+#
+# expunge_vm_event.success ->
+#   1 get vm  inventory from redis
+#   2 delete vm in jump
+
 # set logger
 logger = logging.getLogger()
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(message)s'))
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
-
-
-# redis hash name
-api_id_name = 'ZSTACK_API_ID'
-vm_inventory_name = 'ZSTACK_VM_INVENTORY'
 
 # event key
 canonical_event = "org.zstack.core.cloudbus.CanonicalEvent"
@@ -100,57 +107,53 @@ class ZStackConsumer(ConsumerMixin):
     def on_message(self, body, message):
         event = json.loads(body)
 
+        # ZStack msg
         if destroy_msg in event:
             body = event[destroy_msg]
             api_id = body['id']
             vm_uuid = body['uuid']
-            db.hset(api_id_name, api_id, vm_uuid)
+            redis_api_set(api_id, vm_uuid)
             logger.info('destroy_msg: apiId {} vmUuid {}'.format(api_id, vm_uuid))
 
         elif recover_msg in event:
             body = event[recover_msg]
             api_id = body['id']
-            db.hset(api_id_name, api_id, '1')
+            redis_api_set(api_id, '1')
             logger.info('recover_msg: apiId {}'.format(api_id))
 
         elif expunge_msg in event:
             body = event[expunge_msg]
             api_id = body['id']
             vm_uuid = body['uuid']
-            db.hset(api_id_name, api_id, vm_uuid)
+            redis_api_set(api_id, vm_uuid)
             logger.info('expunge_msg: apiId {} vmUuid {}'.format(api_id, vm_uuid))
 
-        # aliyun
+        # Aliyun msg
         elif delete_vm_remote_msg_ali in event:
             body = event[delete_vm_remote_msg_ali]
             api_id = body['headers']['task-context']['api']
             vm_uuid = body['ecsId']
-            db.hset(api_id_name, api_id, vm_uuid)
+            redis_api_set(api_id, vm_uuid)
             logger.info('aliyun_delete_remote_msg: apiId {} ecsId {}'.format(api_id, vm_uuid))
 
         message.ack()
 
     def on_canonical_event(self, body, message):
-        event = json.loads(body)
-
-        if canonical_event in event:
-            body = event[canonical_event]
-            if body['path'] == '/vm/state/change':
-                content = body['content']
-                if content['newState'] == "Destroyed":
-                    inventory = content['inventory']
-                    task_context = body['headers']['task-context']
-                    api_id = task_context['api']
-
-                    vm_uuid = db.hget(api_id_name, api_id)
-                    if vm_uuid is not None:
-                        # we need cache all VM inventory
-                        # which Destroyed
-                        db.hset(vm_inventory_name, vm_uuid, json.dumps(inventory))
-                        hostname, ip = parse(inventory)
-                        logger.info(
-                            'canonical_destroyed: apiId {} vmUuid {}, hostname {}, ip {}'
-                            .format(api_id, vm_uuid, hostname, ip))
+        # event = json.loads(body)
+        #
+        # if canonical_event in event:
+        #     body = event[canonical_event]
+        #     if body['path'] == '/vm/state/change' and body['content']['newState'] == "Destroyed":
+        #         inventory = body['content']['inventory']
+        #         vm_uuid, hostname, ip = parse(inventory)
+        #
+        #         # we need cache all Destroyed VM inventory
+        #         #  in redis, so when VM is expunged
+        #         # wo can get VM inventory from redis
+        #         redis_vm_set(vm_uuid, json.dumps(inventory))
+        #         logger.info(
+        #             'canonical_destroyed: redis hset vmUuid {}, hostname {}, ip {}, state Destroyed'
+        #             .format(vm_uuid, hostname, ip))
 
         message.ack()
 
@@ -167,166 +170,160 @@ class ZStackConsumer(ConsumerMixin):
             body = event[create_vm]
             if body["success"]:
                 inventory = body["inventory"]
-                vm_uuid = inventory['uuid']
-                db.hset(vm_inventory_name, vm_uuid, json.dumps(inventory))
-                hostname, ip = parse(inventory)
-                logger.info('create_vm: redis h vmUuid {} hostname {} ip {},'.format(vm_uuid, hostname, ip))
+                vm_uuid, hostname, ip = parse(inventory)
 
-                if inventory['type'] != 'UserVm':
-                    logger.info('create_vm: type is not UserVm,  host {} ip {}'.format(hostname, ip))
+                if inventory['type'] != 'UserVm' or inventory['platform'] != 'Linux':
+                    logger.info("create_vm: VM type is not 'UserVm', or platform is not 'Linux',"
+                                " vmUuid {} hostname {} ip {}".format(vm_uuid, hostname, ip))
                     return message.ack()
 
-                if inventory['platform'] != 'Linux':
-                    logger.info('create_vm: platform is not Linux, host {} ip {} '.format(hostname, ip))
-                    return message.ack()
+                redis_vm_set(vm_uuid, json.dumps(inventory))
+                logger.info('create_vm: redis hset vmUuid {} hostname {} ip {}'.format(vm_uuid, hostname, ip))
 
                 code = js.add_resource(hostname, 'root', "no_need", ip=ip)
-
-                logger.info(
-                    'create_vm: jump add vmUuid {} hostname {} ip {}, status code {}'.format(vm_uuid, hostname, ip,
-                                                                                             code))
+                logger.info("create_vm: jump add vmUuid {} hostname {} ip {},"
+                            " status code {}".format(vm_uuid, hostname, ip, code))
 
         elif create_vm_ali in event:
             body = event[create_vm_ali]
             if body["success"]:
                 inventory = body['inventory']
+
                 # TODO aliyun check VM os Type
 
-                vm_uuid = inventory['ecsInstanceId']
-                db.hset(vm_inventory_name, vm_uuid, json.dumps(inventory))
-                hostname = inventory['name']
-                ip = inventory['privateIpAddress']
-                logger.info('aliyun_create_vm: redis hset vmUuid {} hostname {} ip {},'.format(vm_uuid, hostname, ip))
+                vm_uuid, hostname, ip = parse_ali(inventory)
+                redis_vm_set(vm_uuid, json.dumps(inventory))
+                logger.info('aliyun_create_vm: redis hset vmUuid {} hostname {} ip {}'.format(vm_uuid, hostname, ip))
 
-                password = inventory['ecsInstanceRootPassword']
-                code = js.add_resource(hostname, 'root', password, ip=ip)
-                logger.info(
-                    'aliyun_create_vm: jump add vmUuid {} hostname {} ip {}, status code {}'.format(vm_uuid, hostname,
-                                                                                                    ip, code))
+                code = js.add_resource(hostname, 'root', inventory['ecsInstanceRootPassword'], ip=ip)
+                logger.info("aliyun_create_vm: jump add vmUuid {} hostname {} ip {},"
+                            " status code {}".format(vm_uuid, hostname, ip, code))
 
         elif destroy_vm in event:
             body = event[destroy_vm]
             api_id = body['apiId']
 
-            vm_uuid = db.hget(api_id_name, api_id)
-            if vm_uuid is not None:
-                if body["success"]:
-                    inventory = db.hget(vm_inventory_name, vm_uuid)
-                    if inventory is None:
-                        logger.info('destroy_vm: vmUuid {} not in redis'.format(vm_uuid))
-                        return message.ack()
+            vm_uuid = redis_api_get(api_id)
+            if vm_uuid is not None and body["success"]:
+                inventory = redis_vm_get(vm_uuid)
+                if inventory is None:
+                    logger.info('destroy_vm: vmUuid {} not in redis'.format(vm_uuid))
+                    return message.ack()
 
-                    hostname, ip = parse(json.loads(inventory.decode('utf-8')))
+                _, hostname, ip = parse(json.loads(inventory.decode('utf-8')))
 
-                    asset_id, asset = js.search_resource(hostname)
+                asset_id, asset = js.search_resource(hostname)
+                if asset_id is None:
+                    logger.info(
+                        'destroy_vm: vmUuid {} hostname {} ip {} '
+                        'not found in jumpserver'.format(vm_uuid, hostname, ip))
+                    return message.ack()
 
-                    if asset_id is None and asset is None:
-                        logger.info(
-                            'destroy_vm: vmUuid {} hostname {} ip {} '
-                            'not found in jumpserver'.format(vm_uuid, hostname, ip))
-                        return message.ack()
+                asset['is_active'] = '0'
+                code = js.edit_resource(asset_id, asset)
+                logger.info('destroy_vm: jump inactive vmUuid {} hostname {} ip {},'
+                            ' status code {}'.format(vm_uuid, hostname, ip, code))
 
-                    asset['is_active'] = '0'
-                    code = js.edit_resource(asset_id, asset)
-                    logger.info('destroy_vm: jump edit vmUuid {} hostname {} ip {},'
-                                ' status code {}'.format(vm_uuid, hostname, ip, code))
-
-                # no matter successful we need del this api id
-                db.hdel(api_id_name, api_id)
+            # no matter event successful
+            # we del this api_id in redis
+            redis_api_del(api_id)
 
         elif recover_vm in event:
             body = event[recover_vm]
             api_id = body['apiId']
 
-            res = db.hget(api_id_name, api_id)
-            if res is not None:
-                if body["success"]:
-                    # inventory is just in body
-                    # no need get from redis
-                    inventory = body["inventory"]
-                    vm_uuid = inventory["uuid"]
-                    hostname, ip = parse(inventory)
-                    asset_id, asset = js.search_resource(hostname)
-                    if asset_id is None and asset is None:
-                        logger.info(
-                            'recover_vm: uuid {} hostname {} ip {},'
-                            ' not found in jumpserver'.format(vm_uuid, hostname, ip))
-                        return message.ack()
+            if redis_api_get(api_id) is not None and body["success"]:
+                # inventory is just in event
+                # dont need get from redis
+                inventory = body["inventory"]
+                vm_uuid, hostname, ip = parse(inventory)
+                asset_id, asset = js.search_resource(hostname)
+                if asset_id is None:
+                    logger.info(
+                        'recover_vm: uuid {} hostname {} ip {},'
+                        ' not found in jumpserver'.format(vm_uuid, hostname, ip))
+                    return message.ack()
 
-                    asset['is_active'] = '1'
-                    code = js.edit_resource(asset_id, asset)
-                    logger.info('recover_vm: editVM uuid {} hostname {} ip {},'
-                                ' status code {}'.format(vm_uuid, hostname, ip, code))
+                asset['is_active'] = '1'
+                code = js.edit_resource(asset_id, asset)
+                logger.info('recover_vm: jump active vmUuid {} hostname {} ip {},'
+                            ' status code {}'.format(vm_uuid, hostname, ip, code))
 
-                db.hdel(api_id_name, api_id)
+            redis_api_del(api_id)
 
         elif expunge_vm in event:
             body = event[expunge_vm]
             api_id = body['apiId']
 
-            vm_uuid = db.hget(api_id_name, api_id)
-            if vm_uuid is not None:
-                if body["success"]:
-                    inventory = db.hget(vm_inventory_name, vm_uuid)
-                    if inventory is None:
-                        logger.info('expunge_vm: vmUuid {} not in redis {}'.format(vm_uuid, vm_inventory_name))
-                        return message.ack()
+            vm_uuid = redis_api_get(api_id)
+            if vm_uuid is not None and body["success"]:
+                inventory = redis_vm_get(vm_uuid)
+                if inventory is None:
+                    logger.info('expunge_vm: vmUuid {} not in redis {}'.format(vm_uuid, vm_inventory_name))
+                    return message.ack()
 
-                    hostname, ip = parse(json.loads(inventory.decode('utf-8')))
-                    asset_id, asset = js.search_resource(hostname)
-                    if asset_id is None and asset is None:
-                        logger.info('expunge_vm: vmUuid {} hostname {} ip {}'
-                                    ' not found in jumpserver'.format(vm_uuid, hostname, ip))
+                _, hostname, ip = parse(json.loads(inventory.decode('utf-8')))
 
-                    code = js.del_resource(asset_id)
-                    logger.info('expunge_vm: jump delete vmUuid {} hostname {} ip {},'
-                                ' status code {}'.format(vm_uuid, hostname, ip, code))
-                    # if code == 200:
-                    #     r.hdel(vm_inventory_name, vm_uuid)
+                asset_id, asset = js.search_resource(hostname)
+                if asset_id is None:
+                    logger.info('expunge_vm: vmUuid {} hostname {} ip {}'
+                                ' not found in jumpserver'.format(vm_uuid, hostname, ip))
+                    return message.ack()
 
-                db.hdel(api_id_name, api_id)
+                code = js.del_resource(asset_id)
+                logger.info('expunge_vm: jump delete vmUuid {} hostname {} ip {},'
+                            ' status code {}'.format(vm_uuid, hostname, ip, code))
+
+                if code == 200:
+                    redis_vm_del(vm_uuid)
+
+            redis_api_del(api_id)
 
         elif delete_vm_ali in event:
             body = event[delete_vm_ali]
             api_id = body['headers']['task-context']['api']
-            vm_uuid = db.hget(api_id_name, api_id)
-            if vm_uuid is not None:
-                if body["success"]:
-                    inventory = db.hget(vm_inventory_name, vm_uuid)
-                    if inventory is None:
-                        logger.info('aliyun_delete_vm: vmUuid {} not in redis'.format(vm_uuid))
-                        return message.ack()
 
-                    hostname, ip = parse_ali(json.loads(inventory.decode('utf-8')))
-                    asset_id, asset = js.search_resource(hostname)
-                    if asset_id is None and asset is None:
-                        logger.info('aliyun_delete_vm: vmUuid {} hostname {} ip {}'
-                                    ' not found in jumpserver'.format(vm_uuid, hostname, ip))
-                        return message.ack()
+            vm_uuid = redis_api_get(api_id)
+            if vm_uuid is not None and body["success"]:
+                inventory = redis_vm_get(vm_uuid)
+                if inventory is None:
+                    logger.info('aliyun_delete_vm: vmUuid {} not in redis'.format(vm_uuid))
+                    return message.ack()
 
-                    code = js.del_resource(asset_id)
-                    logger.info('aliyun_delete_vm: jump delete vmUuid {} hostname {} ip {},'
-                                ' status code {}'.format(vm_uuid, hostname, ip, code))
-                    # if code == 200:
-                    #     r.hdel(vm_inventory_name, vm_uuid)
+                _, hostname, ip = parse_ali(json.loads(inventory.decode('utf-8')))
 
-                db.hdel(api_id_name, api_id)
+                asset_id, _ = js.search_resource(hostname)
+                if asset_id is None:
+                    logger.info('aliyun_delete_vm: vmUuid {} hostname {} ip {}'
+                                ' not found in jumpserver'.format(vm_uuid, hostname, ip))
+                    return message.ack()
+
+                code = js.del_resource(asset_id)
+                logger.info('aliyun_delete_vm: jump delete vmUuid {} hostname {} ip {},'
+                            ' status code {}'.format(vm_uuid, hostname, ip, code))
+
+                if code == 200:
+                    redis_vm_del(vm_uuid)
+
+            redis_api_del(api_id)
 
         message.ack()
 
 
 def parse(inventory):
+    vm_uuid = inventory["uuid"]
     hostname = inventory["name"]
     # vm must assign static ip
     # do not use DHCP
     ip = inventory["vmNics"][0].get("ip", '')
-    return hostname, ip
+    return vm_uuid, hostname, ip
 
 
 def parse_ali(inventory):
+    vm_uuid = inventory['ecsInstanceId']
     hostname = inventory["name"]
-    ip = inventory['privateIpAddress']
-    return hostname, ip
+    ip = inventory.get('privateIpAddress', '')
+    return vm_uuid, hostname, ip
 
 
 if __name__ == '__main__':
@@ -334,6 +331,13 @@ if __name__ == '__main__':
     js = JumpServer("user", "password", base="http://jump.t.nxin.com/")
     pool = redis.ConnectionPool(host='192.168.0.1', port=6379, db=0)
     db = redis.Redis(connection_pool=pool)
+    # pass redis hash name to partial fuction
+    redis_api_set = partial(db.hset, 'ZSTACK_API_ID')
+    redis_api_get = partial(db.hget, 'ZSTACK_API_ID')
+    redis_api_del = partial(db.hdel, 'ZSTACK_API_ID')
+    redis_vm_set = partial(db.hset, 'ZSTACK_VM_INVENTORY')
+    redis_vm_get = partial(db.hget, 'ZSTACK_VM_INVENTORY')
+    redis_vm_del = partial(db.hdel, 'ZSTACK_VM_INVENTORY')
 
     with Connection(url, heartbeat=15) as conn:
         ZStackConsumer(conn).run()
