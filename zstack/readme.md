@@ -6,15 +6,17 @@ need python3.5 +
 `zssdk3.py` py3 全新异步 sdk，兼容老 sdk Action， 推荐使用 zssdk3.py
 
 
-1 创建VM
+创建VM
 ```python
 import asyncio
-from zstack.zssdk3 import CreateVmInstanceAction, ZStackClient
+from zssdk3 import CreateVmInstanceAction, ZStackClient
 
+# 全局初始化代码
 loop = asyncio.get_event_loop()
 client = ZStackClient(host="zstack.nxin.com", loop=loop)
 client.set_session("account", "username", "password")
 
+# create vm
 q = CreateVmInstanceAction(
     name='test-create-vm.sz',
     description='create by python sdk3',
@@ -22,11 +24,8 @@ q = CreateVmInstanceAction(
     image_uuid='ae0ac51648a6424e95714575730510a1',  # centos 7
     l3_network_uuids=['l3net_id'],
     strategy='InstantStart',
-    systemTags=["staticIp::l3net_id::your_ip"]
-)
-
+    systemTags=["staticIp::l3net_id::your_ip"])
 resp = loop.run_until_complete(client.request_action(q))
-
 print(resp)
 ```
 
@@ -50,11 +49,7 @@ for resp in results:
 
 查询 VM
 ```python
-from zstack.zssdk3 import QueryOneVmInstance, QueryVmInstanceAction
-
-loop = asyncio.get_event_loop()
-client = ZStackClient(host="zstack.nxin.com", loop=loop)
-client.set_session("account", "username", "password")
+from zssdk3 import QueryOneVmInstance, QueryVmInstanceAction
 
 # query one
 q = QueryOneVmInstance()
