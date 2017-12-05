@@ -276,6 +276,8 @@ class ZStackConsumer(ConsumerMixin):
 
                 if code == 200:
                     redis_vm_del(vm_uuid)
+                    logger.info('expunge_vm: redis hdel vmUuid {} hostname {} ip {}'
+                                .format(vm_uuid, hostname, ip))
 
             redis_api_del(api_id)
 
@@ -304,6 +306,8 @@ class ZStackConsumer(ConsumerMixin):
 
                 if code == 200:
                     redis_vm_del(vm_uuid)
+                    logger.info('aliyun_delete_vm: redis hdel vmUuid {} hostname {} ip {}'
+                                .format(vm_uuid, hostname, ip))
 
             redis_api_del(api_id)
 
