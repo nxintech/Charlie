@@ -18,9 +18,12 @@ from jumpserver import JumpServer
 #
 # destroy_vm_event.success -> inactive vm in jump
 #
+# recover_vm_event.success -> active vm in jump
+#
 # expunge_vm_event.success ->
-#   1 get vm  inventory from redis
+#   1 get vm inventory from redis
 #   2 delete vm in jump
+#   3 if delete ok, delete vm inventory from redis
 
 # set logger
 logger = logging.getLogger()
@@ -259,7 +262,7 @@ class ZStackConsumer(ConsumerMixin):
             if vm_uuid is not None and body["success"]:
                 inventory = redis_vm_get(vm_uuid)
                 if inventory is None:
-                    logger.info('expunge_vm: vmUuid {} not in redis {}'.format(vm_uuid, vm_inventory_name))
+                    logger.info('expunge_vm: vmUuid {} not in redis'.format(vm_uuid))
                     return message.ack()
 
                 _, hostname, ip = parse(json.loads(inventory.decode('utf-8')))
