@@ -147,5 +147,6 @@ python inventory3.py  --map
 
 debug
 ```
-python inventory.py --list --debug # 显示 API 的 请求和响应
+# notice: this only works on sdk `zssdk.py` and `inventory.py`
+python inventory.py --list --debug # 显示 zssdk.py 调用 API： 请求和响应
 ```
