@@ -12,7 +12,7 @@ if platform.platform().startswith('Linux'):
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 from zssdk3 import ZStackClient, \
-    LogInByUserAction, QueryVmInstanceAction, \
+    QueryVmInstanceAction, \
     QuerySystemTagAction, QueryUserTagAction, \
     QueryOneVmInstance
 
@@ -157,9 +157,11 @@ def parse_args():
     parser.add_argument('--app', action='store_true',
                         help='list all ansible host group')
 
-    parser.add_argument('--show',
+    parser.add_argument('--show', action='store_true',
                         help='show specific ansible host group')
 
+    parser.add_argument('--map', action='store_true',
+                        help='show vm hostname uuid map')
     return parser.parse_args()
 
 
@@ -186,3 +188,7 @@ if __name__ == '__main__':
     if args.show:
         data, _ = inventory_data()
         print(data[args.show])
+
+    if args.map:
+        with open('.cache', 'rb') as f:
+            print(json.dumps(pickle.load(f), indent=2))

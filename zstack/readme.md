@@ -1,20 +1,91 @@
-# ansible dynamic inventory
+# Zstack sdk
 need python3.5 +
 
 `zssdk.py` 官方 python SDK，并在其基础上做了一些修改用于适配 py3
 
-`inventory.py` ansible dynamic inventory, 自动生成 .cache 文件，
-记录 hostname 和 VmInstance uuid 的映射关系。
+`zssdk3.py` py3 全新异步 sdk，兼容老 sdk Action， 推荐使用 zssdk3.py
+
+
+1 创建VM
+```python
+import asyncio
+from zstack.zssdk3 import CreateVmInstanceAction, ZStackClient
+
+loop = asyncio.get_event_loop()
+client = ZStackClient(host="zstack.nxin.com", loop=loop)
+client.set_session("account", "username", "password")
+
+q = CreateVmInstanceAction(
+    name='test-create-vm.sz',
+    description='create by python sdk3',
+    instance_offering_uuid='2fb29451e02c4435a374289092cd5dcc',  # 1c1g
+    image_uuid='ae0ac51648a6424e95714575730510a1',  # centos 7
+    l3_network_uuids=['l3net_id'],
+    strategy='InstantStart',
+    systemTags=["staticIp::l3net_id::your_ip"]
+)
+
+resp = loop.run_until_complete(client.request_action(q))
+
+print(resp)
 ```
-python inventory.py --list
-python inventory.py --host xx.teat.zs 
 
-# 显示 API 的 请求和响应
-python inventory.py --list --debug
+批量创建
+```python
+tasks = []
+
+q1 = CreateVmInstanceAction(...)
+tasks.append(client.request_action(q1))
+
+q2 = CreateVmInstanceAction(...)
+tasks.append(client.request_action(q2))
+
+q3 = CreateVmInstanceAction(...)
+tasks.append(client.request_action(q3))
+
+results = loop.run_until_complete(asyncio.gather(*tasks))
+for resp in results:
+    print(resp)
 ```
 
+查询 VM
+```python
+from zstack.zssdk3 import QueryOneVmInstance, QueryVmInstanceAction
 
-`zssdk3.py` py3 全新异步 sdk，兼容老 sdk Action
+loop = asyncio.get_event_loop()
+client = ZStackClient(host="zstack.nxin.com", loop=loop)
+client.set_session("account", "username", "password")
+
+# query one
+q = QueryOneVmInstance()
+q.uuid = "your vm_uuid"
+resp = loop.run_until_complete(client.request_action(q))
+print(resp)
+
+# query all
+q = QueryVmInstanceAction()
+q.conditions = ["type=UserVm"]
+q.replyWithCount = True
+q.limit = 100
+q.start = 0
+
+total = 0
+count = 0
+while q.start == 0 or count < total:
+    resp = loop.run_until_complete(client.request_action(q))
+    print(resp)
+    
+    value = resp["value"]
+    total = resp["value"]["total"]
+    count += len(resp["value"]["inventories"])
+    q.start += q.limit
+```
+
+# ansible dynamic inventory 
+
+`inventory.py` 适用于 Python2.7+ 环境
+
+`inventory3.py` 根据 py3 SDK `zssdk3.py` 实现的 ansible dynamic inventory
 
 依赖
 ```
@@ -24,22 +95,24 @@ pip install uvloop
 pip install aiohttp
 ```
 
-使用方式
+列出所有主机信息
 ```
-# 配置 action
-action = SomeAction()
-action.xxx = xxx
+python inventory3.py --list
+
+{
+  "_meta":{
+    "hostvars":{
+      "nx-xxxx.produce.zs":{
+        "ansible_ssh_user":"root",
+        "ansible_ssh_host":"10.xx.xx.xx",
+        "ansible_ssh_port":22,
+        "zstack":{
+          "uuid":"------------------",
+          "name":"nx-xxxx.produce.zs",
 ...
-
-loop = asyncio.get_event_loop()
-client = ZStackClient(host="zstack.nxin.com", loop=loop)
-client.set_session("account", "username", "password")
-r = loop.run_until_complete(client.request_action(q))
-print(r)
 ```
 
-`inventory3.py` 根据 py3 SDK 实现的 ansible dynamic inventory
-
+指定主机名查看 VM 信息 `python inventory3.py --host <vm hostname>`
 ```
 python inventory3.py --host 网络测试陪练机4
 {
@@ -47,56 +120,19 @@ python inventory3.py --host 网络测试陪练机4
   "ansible_ssh_host":"10.xxx.xxx.xxx",
   "ansible_ssh_port":22,
   "zstack":{
-    "uuid":"26731bf3b6944b8e98a95500f42b4781",
+    "uuid":"----------------",
     "name":"\u7f51\u7edc\u6d4b\u8bd5\u966a\u7ec3\u673a4",
     "description":"",
-    "zoneUuid":"053407e87ae74f98948dbfa637342c31",
-    "clusterUuid":"6675568827b744b2a592d192ee2a58d6",
-    "imageUuid":"e5cbff6ca9885a4395cf984773b2018e",
-    "hostUuid":"9dcd974f612b43dfbccba37e15fb422a",
-    "lastHostUuid":"d91a2c0070604e05a0faf6a5fab32b7c",
-    "instanceOfferingUuid":"34d32c5368324a2b9d7d82f7b9167d87",
-    "rootVolumeUuid":"812e952e81bb4ceeb5b76a3ce7f1cbe0",
-    "platform":"Linux",
-    "defaultL3NetworkUuid":"420e6c0e6b0d4819ac5c277a0a1b2db5",
-    "type":"UserVm",
-    "hypervisorType":"KVM",
-    "memorySize":8589934592,
-    "cpuNum":4,
-    "cpuSpeed":0,
-    "allocatorStrategy":"LeastVmPreferredHostAllocatorStrategy",
-    "createDate":"Nov 22, 2017 10:56:32 AM",
-    "lastOpDate":"Nov 22, 2017 3:43:24 PM",
-    "state":"Running",
-    "internalId":135,
-    "vmNics":[
-      {
-        "uuid":"e9d1dd78dd9049339ff70c2edf2119bf",
-        ...
-        "createDate":"Nov 22, 2017 10:56:32 AM",
-        "lastOpDate":"Nov 22, 2017 10:56:32 AM"
-      }
-    ],
-    "allVolumes":[
-      {
-        "uuid":"812e952e81bb4ceeb5b76a3ce7f1cbe0",
-        "name":"ROOT-for-\u7f51\u7edc\u6d4b\u8bd5\u966a\u7ec3\u673a4",
-        "description":"Root volume for VM[uuid:26731bf3b6944b8e98a95500f42b4781]",
-        ...
-        "state":"Enabled",
-        "status":"Ready",
-        "createDate":"Nov 22, 2017 10:56:32 AM",
-        "lastOpDate":"Nov 22, 2017 10:56:33 AM",
-        "isShareable":false
-      }
-    ]
+    ...
   }
 ```
 
 列出可用的主机组
 ```
 python inventory3.py --app
-dict_keys(['tomcat', 'rabbitmq', 'svn', 'ansible', 'gitlab', 'elasticsearch', 'nexus', 'others', 'kafka', 'bind', 'haproxy', 'etcd', 'dns', 'ldap', 'openresty', 'zookeeper', 'falcon', 'memcache', 'pmm-server', 'template', 'jumpserver', 'memcacheq', 'jenkins', 'prometheus'])
+dict_keys(['tomcat', 'rabbitmq', 'svn', 'ansible', 'gitlab', 'elasticsearch', 'nexus', 
+'others', 'kafka', 'bind', 'haproxy', 'etcd', 'dns', 'ldap', 'openresty', 'zookeeper',
+'falcon', 'memcache', 'pmm-server', 'template', 'jumpserver', 'memcacheq', 'jenkins', 'prometheus'])
 
 # use host group
 ansible tomcat -m ping
@@ -106,4 +142,16 @@ ansible tomcat -m ping
 ```
 python inventory3.py  --show zookeeper
 ['zookeeper02.produce.zs', 'zookeeper03.produce.zs', 'zookeeper01.produce.zs']
+```
+
+查看 hostname 和 VmInstance uuid 的映射关系
+```
+python inventory3.py  --map
+{   'xx01.produce.zs': 'c017**************************27',
+    'xx02.produce.zs': 'a57a**************************18',
+```
+
+debug
+```
+python inventory.py --list --debug # 显示 API 的 请求和响应
 ```

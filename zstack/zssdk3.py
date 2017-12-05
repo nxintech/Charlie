@@ -175,7 +175,9 @@ class ZStackClient(TaskPool):
 
         elif status == 202:
             # API needs polling
-            return await self.poll(action, json_body)
+            if action.NEED_POLL:
+                return await self.poll(action, json_body)
+            return {"value": json_body}
 
         else:
             raise_error(status, json_body)
@@ -218,9 +220,9 @@ class ZStackClient(TaskPool):
         with async_timeout.timeout(self._polling_timeout):
             count = 0
             while True:
-                resp = await self._do_request('GET', location)
-                if resp.status in [200, 503]:
-                    return {"value": json.loads(resp.body)}
+                status, body = await self._do_request('GET', location)
+                if status in [200, 503]:
+                    return {"value": json.loads(body)}
 
                 count += 1
                 await asyncio.sleep(self._polling_interval)
@@ -282,7 +284,7 @@ class AbstractAction:
             if annotation.valid_values and value not in annotation.valid_values:
                 raise ValueError(
                     "attribute {} not in the valid options{}."
-                        .format(name, annotation.valid_values))
+                    .format(name, annotation.valid_values))
 
             if annotation.no_trim is False and isinstance(value, str):
                 setattr(self, name, value.strip())
@@ -344,10 +346,10 @@ class LogOutAction(AbstractAction):
     }
 
     def __init__(self):
-        super(LogOutAction, self).__init__()
         self.sessionId = None
         self.systemTags = None
         self.userTags = None
+        super().__init__()
 
 
 class QueryAction(AbstractAction):
@@ -535,3 +537,82 @@ class QueryUserTagAction(QueryAction):
         self.userTags = None
         super().__init__()
 
+
+class CreateVmInstanceAction(AbstractAction):
+    HTTP_METHOD = 'POST'
+    PATH = '/vm-instances'
+    NEED_SESSION = True
+    NEED_POLL = True
+    PARAM_NAME = 'params'
+
+    PARAMS = {
+        'name': ParamAnnotation(required=True, max_length=255, non_empty=False, null_elements=False, empty_string=True,
+                                no_trim=False),
+        'instanceOfferingUuid': ParamAnnotation(required=True, non_empty=False, null_elements=False, empty_string=True,
+                                                no_trim=False),
+        'imageUuid': ParamAnnotation(required=True, non_empty=False, null_elements=False, empty_string=True,
+                                     no_trim=False),
+        'l3NetworkUuids': ParamAnnotation(required=True, non_empty=True, null_elements=False, empty_string=True,
+                                          no_trim=False),
+        'type': ParamAnnotation(required=False, valid_values=['UserVm', 'ApplianceVm'], non_empty=False,
+                                null_elements=False, empty_string=True, no_trim=False),
+        'rootDiskOfferingUuid': ParamAnnotation(required=False, non_empty=False, null_elements=False, empty_string=True,
+                                                no_trim=False),
+        'dataDiskOfferingUuids': ParamAnnotation(required=False, non_empty=False, null_elements=False,
+                                                 empty_string=True, no_trim=False),
+        'zoneUuid': ParamAnnotation(required=False, non_empty=False, null_elements=False, empty_string=True,
+                                    no_trim=False),
+        'clusterUuid': ParamAnnotation(required=False, non_empty=False, null_elements=False, empty_string=True,
+                                       no_trim=False),
+        'hostUuid': ParamAnnotation(required=False, non_empty=False, null_elements=False, empty_string=True,
+                                    no_trim=False),
+        'primaryStorageUuidForRootVolume': ParamAnnotation(required=False, non_empty=False, null_elements=False,
+                                                           empty_string=True, no_trim=False),
+        'description': ParamAnnotation(required=False, max_length=2048, non_empty=False, null_elements=False,
+                                       empty_string=True, no_trim=False),
+        'defaultL3NetworkUuid': ParamAnnotation(),
+        'strategy': ParamAnnotation(required=False, valid_values=['InstantStart', 'JustCreate'], non_empty=False,
+                                    null_elements=False, empty_string=True, no_trim=False),
+        'resourceUuid': ParamAnnotation(),
+        'systemTags': ParamAnnotation(),
+        'userTags': ParamAnnotation(),
+    }
+
+    def __init__(
+            self,
+            name=None,
+            instance_offering_uuid=None,
+            image_uuid=None,
+            l3_network_uuids=None,
+            type=None,
+            rootDiskOfferingUuid=None,
+            dataDiskOfferingUuids=None,
+            zoneUuid=None,
+            clusterUuid=None,
+            hostUuid=None,
+            primaryStorageUuidForRootVolume=None,
+            description=None,
+            defaultL3NetworkUuid=None,
+            strategy=None,
+            resourceUuid=None,
+            systemTags=None,
+            userTags=None,
+    ):
+        self.name = name
+        self.instanceOfferingUuid = instance_offering_uuid
+        self.imageUuid = image_uuid
+        self.l3NetworkUuids = l3_network_uuids
+        self.type = type
+        self.rootDiskOfferingUuid = rootDiskOfferingUuid
+        self.dataDiskOfferingUuids = dataDiskOfferingUuids
+        self.zoneUuid = zoneUuid
+        self.clusterUuid = clusterUuid
+        self.hostUuid = hostUuid
+        self.primaryStorageUuidForRootVolume = primaryStorageUuidForRootVolume
+        self.description = description
+        self.defaultL3NetworkUuid = defaultL3NetworkUuid
+        self.strategy = strategy
+        self.resourceUuid = resourceUuid
+        self.systemTags = systemTags
+        self.userTags = userTags
+        super().__init__()
