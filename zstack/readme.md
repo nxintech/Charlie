@@ -70,7 +70,6 @@ while q.start == 0 or count < total:
     resp = loop.run_until_complete(client.request_action(q))
     print(resp)
     
-    value = resp["value"]
     total = resp["value"]["total"]
     count += len(resp["value"]["inventories"])
     q.start += q.limit
