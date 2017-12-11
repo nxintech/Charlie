@@ -1,11 +1,10 @@
 # -*- coding:utf-8 -*-
 from __future__ import unicode_literals
-
-from functools import wraps
+import json
 import http.cookiejar
 import urllib.request
+from functools import wraps
 from urllib.parse import urlencode
-import json
 
 
 def check_error(data):
@@ -80,8 +79,8 @@ class Proj:
         data = json.loads(response.read().decode('utf-8'))
         return data
 
-    def add_project(data, sync=False):
-
+    # TODO
+    def add_project(self, data, sync=False):
         """
         data JSON格式：
         {
