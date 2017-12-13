@@ -51,13 +51,13 @@ for resp in results:
 ```python
 from zssdk3 import QueryOneVmInstance, QueryVmInstanceAction
 
-# query one
+# query one Vm with uuid
 q = QueryOneVmInstance()
 q.uuid = "your vm_uuid"
 resp = loop.run_until_complete(client.request_action(q))
 print(resp)
 
-# query all
+# query all Vms
 q = QueryVmInstanceAction()
 q.conditions = ["type=UserVm"]
 q.replyWithCount = True
@@ -73,6 +73,15 @@ while q.start == 0 or count < total:
     total = resp["value"]["total"]
     count += len(resp["value"]["inventories"])
     q.start += q.limit
+    
+    
+# query Vms with a tag
+q = QueryVmInstanceAction()
+q.conditions = ["type=UserVm", "__userTag__=app::tomcat::7.0.70"]
+q.fields = ["name"]
+resp = loop.run_until_complete(client.request_action(q))
+for i in resp['value']['inventories']:
+    print(i)
 ```
 
 # ansible dynamic inventory 
