@@ -115,6 +115,9 @@ python inventory3.py --list
 ...
 ```
 
+除了 list 功能是调用 ZStack API，其他功能均从缓存读取数据
+
+
 指定主机名查看 VM 信息 `python inventory3.py --host <vm hostname>`
 ```
 python inventory3.py --host 网络测试陪练机4
@@ -132,7 +135,7 @@ python inventory3.py --host 网络测试陪练机4
 
 列出可用的主机组
 ```
-python inventory3.py --app
+python inventory3.py --groups
 dict_keys(['tomcat', 'rabbitmq', 'svn', 'ansible', 'gitlab', 'elasticsearch', 'nexus', 
 'others', 'kafka', 'bind', 'haproxy', 'etcd', 'dns', 'ldap', 'openresty', 'zookeeper',
 'falcon', 'memcache', 'pmm-server', 'template', 'jumpserver', 'memcacheq', 'jenkins', 'prometheus'])
@@ -143,15 +146,20 @@ ansible tomcat -m ping
 
 显示特定主机组
 ```
-python inventory3.py  --show zookeeper
+python inventory3.py --group zookeeper
 ['zookeeper02.produce.zs', 'zookeeper03.produce.zs', 'zookeeper01.produce.zs']
 ```
 
 查看 hostname 和 VmInstance uuid 的映射关系
 ```
-python inventory3.py  --map
+python inventory3.py --map
 {   'xx01.produce.zs': 'c017**************************27',
     'xx02.produce.zs': 'a57a**************************18',
+```
+
+刷新缓存
+```
+python inventory3.py --refresh
 ```
 
 debug

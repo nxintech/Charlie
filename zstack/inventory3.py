@@ -1,5 +1,4 @@
 import os
-import pickle
 import asyncio
 import platform
 import argparse
@@ -39,7 +38,8 @@ def get_instances(limit=100):
         q.start += q.limit
 
 
-def query(service=None):
+def query_app(service=None):
+    # query vm that user tag start with app
     conditions = ["type=UserVm"]
     if service:
         conditions.append("__userTag__~=app::{}%".format(service))
@@ -73,6 +73,7 @@ def inventory_data():
 
     # host aggregate by user tag
     tasks = []
+    service_cache = {}
     index = 0
     for tag in get_user_tags():
         if tag.startswith('app::'):
@@ -80,7 +81,7 @@ def inventory_data():
             if service in service_cache:
                 continue
             service_cache[service] = index
-            q = query(service=service)
+            q = query_app(service=service)
             tasks.append(client.request_action(q))
             index += 1
 
@@ -119,19 +120,17 @@ def get_user_tags():
 
 
 def get_host(hostname):
-    if not os.path.exists(".cache"):
-        d, maps = inventory_data()
-        with open(".cache", 'wb') as f:
-            pickle.dump(maps, f)
+    if not os.path.exists('.cache'):
+        data, maps = refresh()
+        return data['_meta']['hostvars'][hostname] or {}
 
-        return d['_meta']['hostvars'][hostname] or {}
+    with open('.map') as f:
+        maps = json.loads(f.read())
 
-    with open(".cache", 'rb') as f:
-        unpickler = pickle.Unpickler(f)
-        maps = unpickler.load()
-        if not isinstance(maps, dict):
-            raise ValueError()
+    if hostname not in maps:
+        return {}
 
+    # hostname not in vm hostname uuid map
     q = QueryOneVmInstance()
     q.uuid = maps[hostname]
     resp = loop.run_until_complete(client.request_action(q))
@@ -146,23 +145,69 @@ def get_host(hostname):
     return host_vars
 
 
+def read_cache():
+    with open('.cache') as f:
+        return json.loads(f.read())
+
+
+def refresh():
+    data, maps = inventory_data()
+    with open('.map', 'wb') as f:
+        f.write(json.dumps(maps, indent=2))
+    with open(".cache", 'w') as f:
+        del data['_meta']
+        f.write(json.dumps(data))
+    return data, maps
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Zstack Dynamic Inventory")
-    # ansible dynamic inventory args
+
+    # list and host is exclusive
     g = parser.add_mutually_exclusive_group()
     g.add_argument('--list', action='store_true',
                    help='list all servers, conflict with --host')
     g.add_argument('--host',
-                   help='list details about the specific hostname')
-    parser.add_argument('--app', action='store_true',
+                   help='show details of the specific hostname')
+
+    parser.add_argument('--groups', action='store_true',
                         help='list all ansible host group')
 
-    parser.add_argument('--show', action='store_true',
-                        help='show specific ansible host group')
+    parser.add_argument('--group',
+                        help='show hostnames of specific host group')
 
     parser.add_argument('--map', action='store_true',
                         help='show vm hostname uuid map')
+
+    parser.add_argument('--refresh', action='store_true',
+                        help='refresh hostname uuid map and host group cache')
     return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+
+    if args.list:
+        data, _ = refresh()
+        print(json.dumps(data, indent=2))
+
+    if args.host:
+        print(json.dumps(get_host(args.host), indent=2))
+
+    if args.groups:
+        data = read_cache()
+        print(data.keys())
+
+    if args.group:
+        data = read_cache()
+        print(data[args.group])
+
+    if args.map:
+        with open('.map') as f:
+            print(f.read())
+
+    if args.refresh:
+        refresh()
 
 
 if __name__ == '__main__':
@@ -170,25 +215,5 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     client = ZStackClient(host="zstack.nxin.com", loop=loop)
     client.set_session("account", "username", "password")
-    service_cache = {}
-    args = parse_args()
-    if args.list:
-        data, maps = inventory_data()
-        with open(".cache", 'wb') as f:
-            pickle.dump(maps, f)
-        print(json.dumps(data, indent=2))
 
-    if args.host:
-        print(json.dumps(get_host(args.host), indent=2))
-
-    if args.app:
-        inventory_data()
-        print(service_cache.keys())
-
-    if args.show:
-        data, _ = inventory_data()
-        print(data[args.show])
-
-    if args.map:
-        with open('.cache', 'rb') as f:
-            print(json.dumps(pickle.load(f), indent=2))
+    main()
