@@ -160,7 +160,6 @@ def refresh():
     with open(maps_file, 'wb') as f:
         f.write(json.dumps(maps, indent=2))
     with open(cache_file, 'w') as f:
-        del data['_meta']
         f.write(json.dumps(data))
     return data, maps
 
@@ -221,5 +220,5 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     client = ZStackClient(host="zstack.nxin.com", loop=loop)
     client.set_session("account", "username", "password")
-
     main()
+    loop.run_until_complete(client.close())

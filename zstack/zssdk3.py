@@ -3,7 +3,11 @@ import asyncio
 import hashlib
 import datetime
 import async_timeout
-import ujson as json
+
+try:
+    import ujson as json
+except ModuleNotFoundError:
+    import json
 from uuid import uuid4
 from urllib.parse import urljoin
 
@@ -95,8 +99,8 @@ class Session:
         self._password = password
         self.client = client
 
-        self.session_id = None  # session id cache
-        self._session_expired_at = datetime.datetime.now()
+        self.session_id = None
+        self.session_expired_at = datetime.datetime.now()
 
     async def get_session_id(self):
         if self._session_is_expired_after_seconds(
@@ -112,16 +116,30 @@ class Session:
 
             # json_body = json.loads(body)
             inventory = json_body['value']['inventory']
-            self._session_expired_at = parse_date(inventory['expiredDate'])
+            self.session_expired_at = parse_date(inventory['expiredDate'])
             self.session_id = inventory['uuid']
 
         return self.session_id
+
+    async def logout(self):
+        if self.session_id is None:
+            return
+        if self._session_is_expired_after_seconds(
+                self.session_available_time_from_now):
+            # session will expired in 10 sec, do nothing
+            # let session expired at server side
+            self.session_id = None
+            return
+
+        logout = LogOutAction(session_id=self.session_id)
+        # LogOutAction body is ''
+        _ = await self.client.request_action(logout)
 
     def _session_is_expired_after_seconds(self, n):
         now = datetime.datetime.now()
         # uuid is valid if it can be expired in n seconds later
         later = now + datetime.timedelta(seconds=n)
-        return later > self._session_expired_at
+        return later > self.session_expired_at
 
 
 class ZStackClient(TaskPool):
@@ -167,7 +185,10 @@ class ZStackClient(TaskPool):
             action.HTTP_METHOD, self._url(action),
             params=params, headers=headers, json=body)
 
-        json_body = json.loads(body)
+        if body != '':
+            json_body = json.loads(body)
+        else:
+            json_body = ''
 
         if status == 200 or status == 204:
             # API completes
@@ -230,6 +251,9 @@ class ZStackClient(TaskPool):
         # polling timeout
         return raise_error(500, "Location {} polling timeout, count: {}".format(location, count))
 
+    async def close(self):
+        await self.session.logout()
+
 
 class ParamAnnotation(object):
     def __init__(
@@ -284,7 +308,7 @@ class AbstractAction:
             if annotation.valid_values and value not in annotation.valid_values:
                 raise ValueError(
                     "attribute {} not in the valid options{}."
-                    .format(name, annotation.valid_values))
+                        .format(name, annotation.valid_values))
 
             if annotation.no_trim is False and isinstance(value, str):
                 setattr(self, name, value.strip())
@@ -334,19 +358,19 @@ class LogInByUserAction(AbstractAction):
 
 class LogOutAction(AbstractAction):
     HTTP_METHOD = 'DELETE'
-    PATH = '/accounts/sessions/{sessionId}'
+    PATH = '/accounts/sessions/{sessionUuid}'
     NEED_SESSION = False
     NEED_POLL = False
     PARAM_NAME = ''
 
     PARAMS = {
-        'sessionId': ParamAnnotation(),
+        'sessionUuid': ParamAnnotation(),
         'systemTags': ParamAnnotation(),
         'userTags': ParamAnnotation()
     }
 
-    def __init__(self):
-        self.sessionId = None
+    def __init__(self, session_id=None):
+        self.sessionUuid = session_id
         self.systemTags = None
         self.userTags = None
         super().__init__()
