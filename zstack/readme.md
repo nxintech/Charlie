@@ -136,9 +136,8 @@ python inventory3.py --host 网络测试陪练机4
 列出可用的主机组
 ```
 python inventory3.py --groups
-dict_keys(['tomcat', 'rabbitmq', 'svn', 'ansible', 'gitlab', 'elasticsearch', 'nexus', 
-'others', 'kafka', 'bind', 'haproxy', 'etcd', 'dns', 'ldap', 'openresty', 'zookeeper',
-'falcon', 'memcache', 'pmm-server', 'template', 'jumpserver', 'memcacheq', 'jenkins', 'prometheus'])
+all nfs tomcat springboot rabbitmq svn ansible gitlab elasticsearch nexus others kafka haproxy etcd dns ldap openresty
+hadoop zookeeper falcon memcache pmm-server template jumpserver memcacheq jenkins prometheus mongodb
 
 # use host group
 ansible tomcat -m ping
