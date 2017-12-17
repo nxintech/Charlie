@@ -1,20 +1,24 @@
+#!/usr/bin/env python
 import os
 import inspect
 import asyncio
 import platform
 import argparse
-import ujson as json
+
+try:
+    import ujson as json
+except ModuleNotFoundError:
+    import json
 from collections import defaultdict
 
 if platform.platform().startswith('Linux'):
     import uvloop
+
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 from zssdk3 import ZStackClient, \
-    QueryVmInstanceAction, \
-    QuerySystemTagAction, QueryUserTagAction, \
-    QueryOneVmInstance
-
+    QueryVmInstanceAction, QueryOneVmInstance, \
+    QuerySystemTagAction, QueryUserTagAction
 
 basedir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 cache_file = os.path.join(basedir, '.cache')
@@ -157,7 +161,7 @@ def read_cache():
 
 def refresh():
     data, maps = inventory_data()
-    with open(maps_file, 'wb') as f:
+    with open(maps_file, 'w') as f:
         f.write(json.dumps(maps, indent=2))
     with open(cache_file, 'w') as f:
         f.write(json.dumps(data))

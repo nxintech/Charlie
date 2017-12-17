@@ -11,6 +11,9 @@ except ModuleNotFoundError:
 from uuid import uuid4
 from urllib.parse import urljoin
 
+__all__ = ['ZStackClient', 'QueryVmInstanceAction', 'QueryOneVmInstance',
+           'QuerySystemTagAction', 'QueryUserTagAction', 'CreateVmInstanceAction']
+
 
 def raise_error(status, body):
     raise ValueError("status {}, message {}".format(status, body))
