@@ -1,4 +1,5 @@
 import os
+import inspect
 import asyncio
 import platform
 import argparse
@@ -7,13 +8,17 @@ from collections import defaultdict
 
 if platform.platform().startswith('Linux'):
     import uvloop
-
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 from zssdk3 import ZStackClient, \
     QueryVmInstanceAction, \
     QuerySystemTagAction, QueryUserTagAction, \
     QueryOneVmInstance
+
+
+basedir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+cache_file = os.path.join(basedir, '.cache')
+maps_file = os.path.join(basedir, '.map')
 
 
 def get_instances(limit=100):
@@ -120,11 +125,11 @@ def get_user_tags():
 
 
 def get_host(hostname):
-    if not os.path.exists('.cache'):
+    if not os.path.exists(cache_file):
         data, maps = refresh()
         return data['_meta']['hostvars'][hostname] or {}
 
-    with open('.map') as f:
+    with open(maps_file) as f:
         maps = json.loads(f.read())
 
     if hostname not in maps:
@@ -146,15 +151,15 @@ def get_host(hostname):
 
 
 def read_cache():
-    with open('.cache') as f:
+    with open(cache_file) as f:
         return json.loads(f.read())
 
 
 def refresh():
     data, maps = inventory_data()
-    with open('.map', 'wb') as f:
+    with open(maps_file, 'wb') as f:
         f.write(json.dumps(maps, indent=2))
-    with open(".cache", 'w') as f:
+    with open(cache_file, 'w') as f:
         del data['_meta']
         f.write(json.dumps(data))
     return data, maps
@@ -196,14 +201,15 @@ def main():
 
     if args.groups:
         data = read_cache()
-        print(data.keys())
+        # for bash completion
+        print(" ".join(data.keys()))
 
     if args.group:
         data = read_cache()
         print(data[args.group])
 
     if args.map:
-        with open('.map') as f:
+        with open(maps_file) as f:
             print(f.read())
 
     if args.refresh:
