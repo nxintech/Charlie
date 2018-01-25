@@ -3,10 +3,11 @@ import logging
 import threading
 import requests
 import ipaddress
+from flask import Flask, Response
 from user_agents import parse
 from kafka import KafkaConsumer
 from message_pb2 import Message
-from prometheus_client import start_http_server, Counter
+from prometheus_client import Counter, generate_latest
 
 __all__ = ['addr_to_location']
 
@@ -32,12 +33,16 @@ def addr_to_location(addr):
     if ipaddress.ip_address(addr).is_private:
         return "private", "private"
     url = 'http://uc.nxin.com/area/getAreaByIp'
-    resp = requests.post(url, data={"ip": addr})
-    data = resp.json()
-    if data["code"] != 0:
+    try:
+        resp = requests.post(url, data={"ip": addr})
+        data = resp.json()
+        if data["code"] != 0:
+            return "unkown", "unkown"
+        d = data["data"]
+        return d["province"], d["city"]
+    except:
+        # ConnectionError
         return "unkown", "unkown"
-    d = data["data"]
-    return d["province"], d["city"]
 
 
 class KafkaConsumer(threading.Thread):
@@ -68,8 +73,16 @@ class KafkaConsumer(threading.Thread):
                 c_device.labels(instance=ngx_hostname, domain=domain, device=device, os=os, browser=browser).inc()
 
 
+app = Flask(__name__)
+
+
+@app.route('/metrics')
+def metrics():
+    return Response(generate_latest(), mimetype='text/plain; version=0.0.4; charset=utf-8')
+
+
 if __name__ == '__main__':
     # Start up the server to expose the metrics.
     kc = KafkaConsumer()
     kc.start()
-    start_http_server(8000)
+    app.run(host='0.0.0.0', port=8000)
