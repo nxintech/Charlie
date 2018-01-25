@@ -1,4 +1,41 @@
+# introduce
+
+日志收集 pipeline
+```
+raw logs files --> collector --> message queue --> consumer -->  store --> UI
+      | (or)                                           |
+log via network                                      filter --> email/sms
+```
+
+日志通过写入文件，或者通过网络，写入collector， collector 上进行一定处理写入消息队列
+
+collector 使用 heka， 亦可以使用 Fluentd/FileBeat/logstash 等组件
+
+message queue 用来处理日志消息的转发， 目前使用 kafka， 也可以使用 redis 
+
+consumer 进行消息过滤聚合报警等处理，目前使用 hindsight， 也可以自己写 kafka 消费端，
+
+store 用来保存日志，使用 elasticsearch 也可以使用 Prometheus/MySQL
+
+UI 使用 kinbana 也可以使用grafana
+
+
+
 # install
+
+## prepare
+nginx access_log 如果使用文件保存, 需要 logrotate 进行日志轮询切割
+```
+/path_to_access_log/*.log {
+    missingok
+    notifempty
+    daily
+    rotate 30
+    postrotate
+        [ ! -f /path_to_nginx/logs/nginx.pid ] || kill -USR1 `cat /path_to_nginx/logs/nginx.pid`
+    endscript
+}
+```
 
 ## 编译安装
 
@@ -77,7 +114,7 @@ make packages
 ```
 
 
-* install hindsight
+* install hindsight  (可选)
 ```
 git clone https://github.com/mozilla-services/hindsight.git
 cd hindsight 
@@ -98,7 +135,28 @@ common_log_format.lua.patch 修复了这个问题
 ```shell
 patch -p0 < common_log_format.lua.patch
 ```
-# protocol buffer
+# protobuf python
+
+C++ implementation `protoc` `protoc.exe` already compiled,
+you can compile them by run blew
+```console
+git clone https://github.com/google/protobuf.git
+make
 ```
+add python support
+```console
+cd protobuf/python
+python setup.py build
+python setup.py install
+```
+
+compile protobuf file
+```console
 protoc message.proto --python_out=.
+```
+
+# kafka python client
+```console
+pip install prometheus_client
+pip install pyyaml ua-parser user-agents
 ```
