@@ -29,7 +29,7 @@ def addr_to_location(addr):
             return "unkown", "unkown"
         d = data["data"]
         return d["province"], d["city"]
-    except:
+    except Exception:
         # ConnectionError
         logger.info("uc ConnectionError: ip {}".format(addr))
         return "unkown", "unkown"
