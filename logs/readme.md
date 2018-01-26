@@ -155,8 +155,10 @@ compile protobuf file
 protoc message.proto --python_out=.
 ```
 
-# kafka python client
+# kafka decoder
+before use
 ```console
 pip install prometheus_client
 pip install pyyaml ua-parser user-agents
+pip install flask reuqests
 ```
