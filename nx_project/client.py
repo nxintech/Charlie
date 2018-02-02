@@ -143,12 +143,12 @@ class Client:
             print_debug_info(resp)
 
         if not resp.ok:
-            # error returned by server framework
+            # error that status != 200
             raise ValueError(resp.text)
 
         data = resp.json()
         if data['code'] != 0:
-            # error returned by custom error format
+            # error that status = 200
             raise ValueError(data)
 
         return data["data"]
@@ -161,7 +161,8 @@ class Client:
 
     def _is_token_expired(self):
         now = datetime.datetime.now()
-        # uuid is valid if it can be expired in 5 seconds later
+        # token expired in 5 seconds later
+        # is treated as expired as well
         later = now + datetime.timedelta(seconds=5)
         return later > self._token_expired
 
@@ -179,8 +180,7 @@ class Client:
     def get_projects(self):
         endpoint = "/api/v1/projects"
         url = urljoin(self.api_base_url, endpoint)
-        # [Storage(project) for project in self._request(url)]
-        return self._request(url)
+        return [Storage(project) for project in self._request(url)]
 
     @require_token
     def get_project(self, id_or_name):
@@ -215,27 +215,29 @@ class Client:
         else:
             raise TypeError("Type of argument should be 'int' or 'str'")
 
-    @require_token
-    def add_project(self, name, description, hostnames=None, domains=None, build_info=None):
-        endpoint = "/api/v1/projects/"
-        url = urljoin(self.api_base_url, endpoint)
-        return self._request(url, method='POST', json={
-            # Server will auto assign an id for a new project
-            # But server needs the key <id> in body, so
-            # We set value 0 to satisfy the requirement
-            "id": 0,
-            "name": name,
-            "description": description,
-            "hostNames": hostnames,
-            "domains": domains,
-            "buildInfo": build_info
-        })
+    # TODO
+    # @require_token
+    # def add_project(self, name, description, hostnames=None, domains=None, build_info=None):
+    #     endpoint = "/api/v1/projects/"
+    #     url = urljoin(self.api_base_url, endpoint)
+    #     return self._request(url, method='POST', json={
+    #         # Server will auto assign an id for a new project
+    #         # But server needs the key <id> in body, so
+    #         # We set value 0 to satisfy the requirement
+    #         "id": 0,
+    #         "name": name,
+    #         "description": description,
+    #         "hostNames": hostnames,
+    #         "domains": domains,
+    #         "buildInfo": build_info
+    #     })
 
-    @require_token
-    def update_project(self, project):
-        endpoint = "/api/v1/projects/"
-        url = urljoin(self.api_base_url, endpoint)
-        return self._request(url, method='PUT', json={project})
+    # TODO
+    # @require_token
+    # def update_project(self, project):
+    #     endpoint = "/api/v1/projects/"
+    #     url = urljoin(self.api_base_url, endpoint)
+    #     return self._request(url, method='PUT', json={project})
 
     @require_token
     def get_user(self, username):
@@ -249,25 +251,3 @@ class Client:
         endpoint = "/api/v1/users/{}/projects/".format(username)
         url = urljoin(self.api_base_url, endpoint)
         return [Storage(p) for p in self._request(url)]
-
-    # # TODO
-    # def add_project(self, data, sync=False):
-    #     """
-    #     data JSON格式：
-    #     {
-    #         "id",
-    #         "appId",           # 应用ID
-    #         "name",            # 应用名称
-    #         "secret",          # do not post this field
-    #         "repo",            # 仓库地址
-    #         "repoType",        # 仓库类型 1=git,2=svn
-    #         "buildType",       # 1=gradle,2=maven
-    #         "ip",              # hostname1,hostname2...
-    #         "jdkVersion",      # 只能是 jdk7/jdk8
-    #         "validationType",  # 永远是0,表示简单认证方式
-    #         "description",     # 描述
-    #         "moduleName",
-    #         "task",            # clean prod war
-    #         "script",
-    #
-    #
