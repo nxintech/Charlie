@@ -32,7 +32,7 @@ pp = pprint.PrettyPrinter(indent=2)
 
 def print_debug_info(resp):
     print("\n============ Request ============")
-    print("uri: {}".format(resp.request.path_url))
+    print("url: {} {}".format(resp.request.method, resp.request.path_url))
     print("header:")
     pp.pprint(resp.request.headers)
     if resp.request.body:
@@ -215,22 +215,22 @@ class Client:
         else:
             raise TypeError("Type of argument should be 'int' or 'str'")
 
-    # TODO
-    # @require_token
-    # def add_project(self, name, description, hostnames=None, domains=None, build_info=None):
-    #     endpoint = "/api/v1/projects/"
-    #     url = urljoin(self.api_base_url, endpoint)
-    #     return self._request(url, method='POST', json={
-    #         # Server will auto assign an id for a new project
-    #         # But server needs the key <id> in body, so
-    #         # We set value 0 to satisfy the requirement
-    #         "id": 0,
-    #         "name": name,
-    #         "description": description,
-    #         "hostNames": hostnames,
-    #         "domains": domains,
-    #         "buildInfo": build_info
-    #     })
+    @require_token
+    def add_project(self, name, description, hostnames=None, domains=None, build_info=None):
+        endpoint = "/api/v1/projects/"
+        url = urljoin(self.api_base_url, endpoint)
+        project = self._request(url, method='POST', json={
+            # Server will auto assign an id for a new project
+            # But server needs the key <id> in body, so
+            # We set value 0 to satisfy the requirement
+            "id": 0,
+            "name": name,
+            "description": description,
+            "hostNames": hostnames,
+            "domains": domains,
+            "buildInfo": build_info
+        })
+        return Storage(project)
 
     # TODO
     # @require_token
