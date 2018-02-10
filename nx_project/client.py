@@ -5,15 +5,15 @@
   'id': 10,
   'name': 'zntapi',
   'buildInfo': {
-    'lang': 1,
+    'lang': 1, // 1 java| 2 .net | 3 python | 4 go
+    'langVersion': 'jdk7',
     'repo': 'http://gitlab.dbn.cn/mobile/SERVER_ZNT_API.git',
     'repoType': 1,  # 1=git,2=svn
     'buildTool': 1, # 1=gradle,2=maven
     'buildCmd': 'clean prod war',
     'deployCmd': 'ssh root@10.211.19.6 /data0/script/deploy.sh;ssh root@10.211.19.7 /data0/script/deploy.sh',
-    'langVersion': 'jdk7',
     'moduleName': '',
-    'packageType': 2
+    'packageType': 0 notset| 1 jar| 2 war
    },
   'hostNames': None,
   'description': '智农通接口',
@@ -24,6 +24,7 @@ from __future__ import unicode_literals
 import pprint
 import requests
 import datetime
+from enum import IntEnum
 from functools import wraps
 from future.moves.urllib.parse import urljoin
 
@@ -51,7 +52,9 @@ def require_token(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         self._extra_headers = {"Private-Token": self.token}
-        return func(self, *args, **kwargs)
+        resp = func(self, *args, **kwargs)
+        self._extra_headers = None
+        return resp
 
     return wrapper
 
@@ -118,6 +121,48 @@ class Storage(dict):
         return '<Storage ' + dict.__repr__(self) + '>'
 
 
+class Language(IntEnum):
+    default = 0
+    java = 1
+    dotnet = 2
+    python = 3
+    golang = 4
+
+
+class RepoType(IntEnum):
+    default = 0
+    git = 1
+    svn = 2
+
+
+class BuildTool(IntEnum):
+    default = 0
+    gradle = 1
+    maven = 2
+
+
+class PackageType(IntEnum):
+    default = 0
+    jar = 1
+    war = 2
+    exe = 3
+
+
+def decode_hook(dct):
+    s = Storage(dct)
+    if 'buildInfo' in dct:
+        build_info = dct['buildInfo']
+        if 'lang' in build_info:
+            s.buildInfo.lang = Language(build_info['lang'])
+        if 'repoType' in build_info:
+            s.buildInfo.repoType = RepoType(build_info['repoType'])
+        if 'buildTool' in build_info:
+            s.buildInfo.buildTool = BuildTool(build_info['buildTool'])
+        if 'packageType' in build_info:
+            s.buildInfo.packageType = BuildTool(build_info['packageType'])
+    return s
+
+
 class Client:
     def __init__(self,
                  username=None,
@@ -146,7 +191,7 @@ class Client:
             # error that status != 200
             raise ValueError(resp.text)
 
-        data = resp.json()
+        data = resp.json(object_hook=decode_hook)
         if data['code'] != 0:
             # error that status = 200
             raise ValueError(data)
@@ -155,16 +200,16 @@ class Client:
 
     @property
     def token(self):
-        if self._token is None or self._is_token_expired():
+        def is_token_expired():
+            now = datetime.datetime.now()
+            # token expired in 5 seconds later
+            # is treated as expired as well
+            later = now + datetime.timedelta(seconds=5)
+            return later > self._token_expired
+
+        if self._token is None or is_token_expired():
             self.get_token()
         return self._token
-
-    def _is_token_expired(self):
-        now = datetime.datetime.now()
-        # token expired in 5 seconds later
-        # is treated as expired as well
-        later = now + datetime.timedelta(seconds=5)
-        return later > self._token_expired
 
     def get_token(self):
         endpoint = "/api/v1/auth/token"
@@ -174,19 +219,19 @@ class Client:
             "password": self.password
         })
         self._token = data["token"]
-        self._token_expired = data["expired"]
+        self._token_expired = parse_date(data["expired"])
 
     @require_token
     def get_projects(self):
         endpoint = "/api/v1/projects"
         url = urljoin(self.api_base_url, endpoint)
-        return [Storage(project) for project in self._request(url)]
+        return self._request(url)
 
     @require_token
     def get_project(self, id_or_name):
         url = self._project_endpoint(id_or_name)
         project = self._request(url)
-        return Storage(project)
+        return self._request(url)
 
     @require_token
     def get_project_package(self, name):

@@ -1,4 +1,12 @@
 # nx-proj client
+dependences
+
+```console
+pip install requests
+# 2.7 +
+pip install enum35 future
+```
+
 example
 ```python
 from client import Client
