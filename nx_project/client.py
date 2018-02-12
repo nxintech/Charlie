@@ -21,30 +21,31 @@
 }>
 """
 from __future__ import unicode_literals
+import json
 import pprint
+import base64
 import requests
 import datetime
 from enum import IntEnum
 from functools import wraps
 from future.moves.urllib.parse import urljoin
 
+
+__all__ = ['Client', 'Project', 'BuildInfo', 'Language', 'RepoType', 'BuildTool', 'PackageType']
+
 pp = pprint.PrettyPrinter(indent=2)
 
 
 def print_debug_info(resp):
-    print("\n============ Request ============")
+    print("============ Request ============")
     print("url: {} {}".format(resp.request.method, resp.request.path_url))
-    print("header:")
-    pp.pprint(resp.request.headers)
+    print("header: {}".format(resp.request.headers))
     if resp.request.body:
-        print("\nbody:")
-        pp.pprint(resp.request.body)
+        print("body: {}".format(resp.request.body))
     print("\n============ Response  ============")
-    print("header:")
-    pp.pprint(resp.headers)
-    print("\nstatus: {}".format(resp.status_code))
-    print("response:")
-    pp.pprint(resp.text)
+    print("header: {}".format(resp.headers))
+    print("status: {}".format(resp.status_code))
+    print("body: '{}'".format(resp.text))
     print()
 
 
@@ -82,7 +83,7 @@ class Storage(dict):
     A Storage object is like a dictionary except `obj.foo` can be used
     in addition to `obj['foo']`.
 
-        >>> o = storage(a=1)
+        >>> o = Storage(a=1)
         >>> o.a
         1
         >>> o['a']
@@ -97,10 +98,6 @@ class Storage(dict):
         AttributeError: 'a'
 
     """
-    def __init__(self, d, **kwargs):
-        super().__init__(**kwargs)
-        for k, v in d.items():
-            self[k] = v
 
     def __getattr__(self, key):
         try:
@@ -163,6 +160,36 @@ def decode_hook(dct):
     return s
 
 
+class Project(Storage):
+    def __init__(self, name, description, build_info, *, id=0, hostnames=None, domains=None):
+        super().__init__()
+        # Server will auto assign an id for a new project
+        # But server needs the key <id> in body, so
+        # We set value 0 to satisfy the requirement
+        self.id = id
+        self.owner = None
+        self.name = name
+        self.description = description
+        self.hostNames = hostnames
+        self.domains = domains
+        self.buildInfo = build_info
+
+
+class BuildInfo(Storage):
+    def __init__(self, repo, repo_type, *, language=Language.default, lang_version=None, build_tool=BuildTool.default,
+                 build_cmd=None, module=None, deploy_cmd=None, package_type=PackageType.default):
+        super().__init__()
+        self.repo = repo
+        self.repoType = RepoType(repo_type)
+        self.lang = Language(language)
+        self.langVersion = lang_version
+        self.buildTool = BuildTool(build_tool)
+        self.buildCmd = build_cmd
+        self.deployCmd = deploy_cmd
+        self.moduleName = module
+        self.packageType = PackageType(package_type)
+
+
 class Client:
     def __init__(self,
                  username=None,
@@ -209,6 +236,7 @@ class Client:
 
         if self._token is None or is_token_expired():
             self.get_token()
+
         return self._token
 
     def get_token(self):
@@ -219,7 +247,11 @@ class Client:
             "password": self.password
         })
         self._token = data["token"]
-        self._token_expired = parse_date(data["expired"])
+        self._token_expired = data["expired"]  # parse_date(data["expired"])
+
+    def parse_token(self):
+        b = base64.b64decode(self._token.split('.')[1])
+        return json.loads(b.decode('utf-8'))
 
     @require_token
     def get_projects(self):
@@ -230,7 +262,6 @@ class Client:
     @require_token
     def get_project(self, id_or_name):
         url = self._project_endpoint(id_or_name)
-        project = self._request(url)
         return self._request(url)
 
     @require_token
@@ -261,21 +292,11 @@ class Client:
             raise TypeError("Type of argument should be 'int' or 'str'")
 
     @require_token
-    def add_project(self, name, description, hostnames=None, domains=None, build_info=None):
-        endpoint = "/api/v1/projects/"
+    def add_project(self, project):
+        project.owner = self.parse_token()['boId']
+        endpoint = "/api/v1/projects"
         url = urljoin(self.api_base_url, endpoint)
-        project = self._request(url, method='POST', json={
-            # Server will auto assign an id for a new project
-            # But server needs the key <id> in body, so
-            # We set value 0 to satisfy the requirement
-            "id": 0,
-            "name": name,
-            "description": description,
-            "hostNames": hostnames,
-            "domains": domains,
-            "buildInfo": build_info
-        })
-        return Storage(project)
+        return self._request(url, method='POST', json=project)
 
     # TODO
     # @require_token

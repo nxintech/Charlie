@@ -9,7 +9,7 @@ pip install enum35 future
 
 example
 ```python
-from client import Client
+from client import *
 c = Client(username='admin', password='')
 
 # all projects
@@ -22,4 +22,13 @@ print(zntapi.name)
 
 # get build package url
 url = c.get_project_package('zntapi')
+
+
+# add project
+project = Project(
+    "test-project", "this is a test project",
+    BuildInfo('http://git.example.com', RepoType.git),
+    hostnames=["xx.1", "xx.2"])
+
+c.add_project(project)
 ```
