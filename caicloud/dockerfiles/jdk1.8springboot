@@ -1,0 +1,11 @@
+from FROM cargo.caicloudprivatetest.com/caicloud/centos7jdk1.8
+
+
+ENV JAVA_OPTS -Xms1g -Xmx4g -XX:MaxPermSize=1g -Xss512k -Djava.awt.headless=true -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=10053 -Dcom.sun.management.jmxremote.rmi.port=7001 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false
+
+ARG JAR_FILE myproject-myversion.jar
+ADD ${JAR_FILE} /data0/www/${JAR_FILE}.jar
+
+ENTRYPOINT ["java", "-jar", "${JAR_FILE}"]
+
+EXPOSE [8080, 10053]

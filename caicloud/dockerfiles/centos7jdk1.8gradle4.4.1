@@ -1,0 +1,25 @@
+FROM cargo.caicloudprivatetest.com/caicloud/centos7jdk1.8
+
+LABEL app="gradle:4.4.1"
+
+ENV GRADLE_HOME /opt/gradle
+ENV GRADLE_VERSION 4.4.1
+
+ENV PATH="${PATH}:${GRADLE_HOME}/bin"
+
+ARG GRADLE_DOWNLOAD_SHA256=e7cf7d1853dfc30c1c44f571d3919eeeedef002823b66b6a988d27e919686389
+RUN set -o errexit -o nounset \
+    && echo "Downloading Gradle" \
+    & wget --output-document=gradle.zip "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" \
+    \
+    && echo "Checking download hash" \
+    && echo "${GRADLE_DOWNLOAD_SHA256} *gradle.zip" | sha256sum --check - \
+    \
+    && echo "Installing Gradle" \
+    && unzip gradle.zip \
+    && rm gradle.zip \
+    && mv "gradle-${GRADLE_VERSION}" "${GRADLE_HOME}/" \
+    && ln --symbolic "${GRADLE_HOME}/bin/gradle" /usr/bin/gradle
+
+# Create Gradle volume
+VOLUME "/root/.gradle"

@@ -232,7 +232,8 @@ class Client:
             # token expired in 5 seconds later
             # is treated as expired as well
             later = now + datetime.timedelta(seconds=5)
-            return later > self._token_expired
+            ts = later.replace().timestamp()
+            return ts > self._token_expired.replace().timestamp()
 
         if self._token is None or is_token_expired():
             self.get_token()
@@ -247,7 +248,7 @@ class Client:
             "password": self.password
         })
         self._token = data["token"]
-        self._token_expired = data["expired"]  # parse_date(data["expired"])
+        self._token_expired = parse_date(data["expired"])
 
     def parse_token(self):
         b = base64.b64decode(self._token.split('.')[1])
@@ -298,12 +299,11 @@ class Client:
         url = urljoin(self.api_base_url, endpoint)
         return self._request(url, method='POST', json=project)
 
-    # TODO
-    # @require_token
-    # def update_project(self, project):
-    #     endpoint = "/api/v1/projects/"
-    #     url = urljoin(self.api_base_url, endpoint)
-    #     return self._request(url, method='PUT', json={project})
+    @require_token
+    def update_project(self, project):
+        endpoint = "/api/v1/projects/"
+        url = urljoin(self.api_base_url, endpoint)
+        return self._request(url, method='PUT', json=project)
 
     @require_token
     def get_user(self, username):
