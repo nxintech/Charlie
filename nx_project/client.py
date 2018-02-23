@@ -256,13 +256,14 @@ class Client:
 
     @require_token
     def get_projects(self):
-        endpoint = "/api/v1/projects"
+        endpoint = "/api/v1/projects/{}"
         url = urljoin(self.api_base_url, endpoint)
         return self._request(url)
 
     @require_token
-    def get_project(self, id_or_name):
-        url = self._project_endpoint(id_or_name)
+    def get_project(self, name):
+        endpoint = "/api/v1/projects/{}".format(name)
+        url = urljoin(self.api_base_url, endpoint)
         return self._request(url)
 
     @require_token
@@ -272,8 +273,14 @@ class Client:
         return self._request(url)
 
     @require_token
-    def get_project_members(self, id):
-        endpoint = "/api/v1/projects/members/{}".format(id)
+    def get_project_package_v2(self, name):
+        endpoint = "/api/v1/projects/{}/package".format(name)
+        url = urljoin(self.api_base_url, endpoint)
+        return self._request(url)
+
+    @require_token
+    def get_project_members(self, name):
+        endpoint = "/api/v1/projects/{}/members".format(name)
         url = urljoin(self.api_base_url, endpoint)
         return self._request(url)
 
@@ -309,11 +316,10 @@ class Client:
     def get_user(self, username):
         endpoint = "/api/v1/users/{}".format(username)
         url = urljoin(self.api_base_url, endpoint)
-        user = self._request(url)
-        return Storage(user)
+        return self._request(url)
 
     @require_token
     def get_user_projects(self, username):
         endpoint = "/api/v1/users/{}/projects/".format(username)
         url = urljoin(self.api_base_url, endpoint)
-        return [Storage(p) for p in self._request(url)]
+        return self._request(url)
