@@ -38,7 +38,7 @@ pp = pprint.PrettyPrinter(indent=2)
 
 def print_debug_info(resp):
     print("============ Request ============")
-    print("url: {} {}".format(resp.request.method, resp.request.path_url))
+    print("url: {} {}".format(resp.request.method, resp.request.url))
     print("header: {}".format(resp.request.headers))
     if resp.request.body:
         print("body: {}".format(resp.request.body))
@@ -205,8 +205,8 @@ class Client:
         self._token_expired = None
         self._extra_headers = None
 
-    def _request(self, url, method='GET', json=None):
-        kwargs = {"json": json}
+    def _request(self, url, method='GET', json=None, **kwargs):
+        kwargs.update({"json": json})
         if self._extra_headers is not None:
             kwargs["headers"] = self._extra_headers
 
@@ -268,12 +268,6 @@ class Client:
 
     @require_token
     def get_project_package(self, name):
-        endpoint = "/api/v1/projects/getPackage/{}".format(name)
-        url = urljoin(self.api_base_url, endpoint)
-        return self._request(url)
-
-    @require_token
-    def get_project_package_v2(self, name):
         endpoint = "/api/v1/projects/{}/package".format(name)
         url = urljoin(self.api_base_url, endpoint)
         return self._request(url)
@@ -323,3 +317,10 @@ class Client:
         endpoint = "/api/v1/users/{}/projects/".format(username)
         url = urljoin(self.api_base_url, endpoint)
         return self._request(url)
+
+    @require_token
+    def search_user(self, params):
+        # { "id": "name": username}
+        endpoint = "/api/v1/search/users"
+        url = urljoin(self.api_base_url, endpoint)
+        return self._request(url, params=params)
