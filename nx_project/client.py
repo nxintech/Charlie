@@ -279,19 +279,10 @@ class Client:
         return self._request(url)
 
     @require_token
-    def delete_project(self, id_or_name):
-        url = self._project_endpoint(id_or_name)
+    def delete_project(self, name):
+        endpoint = "/api/v1/projects/{}".format(name)
+        url = urljoin(self.api_base_url, endpoint)
         return self._request(url, method='delete')
-
-    def _project_endpoint(self, id_or_name):
-        if isinstance(id_or_name, str):
-            endpoint = "/api/v1/projects/{}".format(id_or_name)
-            return urljoin(self.api_base_url, endpoint)
-        elif isinstance(id_or_name, str):
-            endpoint = "/api/v1/projects/id/{}".format(id_or_name)
-            return urljoin(self.api_base_url, endpoint)
-        else:
-            raise TypeError("Type of argument should be 'int' or 'str'")
 
     @require_token
     def add_project(self, project):
@@ -307,6 +298,15 @@ class Client:
         return self._request(url, method='PUT', json=project)
 
     @require_token
+    def update_project_members(self, name, users):
+        endpoint = "/api/v1/projects/{}/members".format(name)
+        if not isinstance(users, list):
+            users = list(users)
+        data = [{'id': user.id, 'admin': user.get('admin', False)} for user in users]
+        url = urljoin(self.api_base_url, endpoint)
+        return self._request(url, method='PUT', json=data)
+
+    @require_token
     def get_user(self, username):
         endpoint = "/api/v1/users/{}".format(username)
         url = urljoin(self.api_base_url, endpoint)
@@ -319,8 +319,11 @@ class Client:
         return self._request(url)
 
     @require_token
-    def search_user(self, params):
-        # { "id": "name": username}
+    def search_user(self, name_or_phone):
+        if ''.isdigit():
+            params = {"phone": name_or_phone}
+        else:
+            params = {"name": name_or_phone}
         endpoint = "/api/v1/search/users"
         url = urljoin(self.api_base_url, endpoint)
         return self._request(url, params=params)
