@@ -256,7 +256,7 @@ class Client:
 
     @require_token
     def get_projects(self):
-        endpoint = "/api/v1/projects/{}"
+        endpoint = "/api/v1/projects"
         url = urljoin(self.api_base_url, endpoint)
         return self._request(url)
 
