@@ -327,3 +327,9 @@ class Client:
         endpoint = "/api/v1/search/users"
         url = urljoin(self.api_base_url, endpoint)
         return self._request(url, params=params)
+
+    @require_token
+    def sync_jenkins(self, name):
+        endpoint = "/api/v1/{}/sync/jenkins".format(name)
+        url = urljoin(self.api_base_url, endpoint)
+        return self._request(url, method='PUT')
