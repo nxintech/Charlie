@@ -19,8 +19,8 @@ hosts = {
     'dbserver': ['192.168.0.1', '192.168.0.2']
 }
 
-runner = Runner()
-runner.set_hosts(hosts)
+runner = Runner(hosts)
+runner.set_module_path('/c/my_module')
 runner.set_extra_vars({'key': 'value'})
 result = runner.run('pb.yml')
 print(result)

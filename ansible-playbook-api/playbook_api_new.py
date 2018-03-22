@@ -35,16 +35,18 @@ options = Options(
 
 
 class Runner:
-    def __init__(self):
+    def __init__(self, hosts):
         self.loader = DataLoader()
-        self.inventory = None
-        self.variable_manager = None
-
-    def set_hosts(self, hosts):
         self.inventory = InventoryManager(loader=self.loader, sources=[hosts])
         self.variable_manager = VariableManager(
             loader=self.loader, inventory=self.inventory
         )
+        self.options = None
+
+    def set_module_path(self, path):
+        self.options = Options(
+            connection='smart', module_path=path, forks=10, become=None, become_method=None,
+            become_user=None, check=False, diff=False)
 
     def set_extra_vars(self, extra_vars):
         self.variable_manager.extra_vars = extra_vars
@@ -62,7 +64,7 @@ class Runner:
                 inventory=self.inventory,
                 variable_manager=self.variable_manager,
                 loader=self.loader,
-                options=options,
+                options=self.options,
                 passwords={'conn_pass': None, 'become_pass': None},
                 stdout_callback=ResultCallback(),
             )
