@@ -14,16 +14,13 @@ human_log.py copy 到 ansible.cfg 中指定的 `callback_plugins` 路径
 
 #### api new
 ```
-hosts = {
-    'webserver': ['localhost'],
-    'dbserver': ['192.168.0.1', '192.168.0.2']
-}
+hosts = 'localhost,192.168.0.1'
 
 runner = Runner(hosts)
 runner.set_module_path('/c/my_module')
 runner.set_extra_vars({'key': 'value'})
-result = runner.run('pb.yml')
-print(result)
+rc, result = runner.run('pb.yml')
+print(rc, result)
 ```
 
 references
