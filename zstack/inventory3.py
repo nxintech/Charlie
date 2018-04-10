@@ -24,6 +24,11 @@ basedir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()
 cache_file = os.path.join(basedir, '.cache')
 maps_file = os.path.join(basedir, '.map')
 
+cluster = {
+    'pre': 'f5c17fd916b54fe4828f7712ade5f35e',
+    'prod': '6675568827b744b2a592d192ee2a58d6'
+}
+
 
 def get_instances(limit=100):
     q = QueryVmInstanceAction()
@@ -47,15 +52,17 @@ def get_instances(limit=100):
         q.start += q.limit
 
 
-def query_app(service=None):
-    # query vm that user tag start with app
-    conditions = ["type=UserVm"]
-    if service:
-        conditions.append("__userTag__~=app::{}%".format(service))
+def query_instance_by_tag(tag, instance_fields=None):
+    # tag format app::service:version
+    # query format
+    # __userTag__~=app::tomcat%
+    # __userTag__=app::tomcat::7
+    conditions = ["type=UserVm", "__userTag__~={}".format(tag)]
 
     q = QueryVmInstanceAction()
     q.conditions = conditions
-    q.fields = ["name"]
+    if instance_fields is None:
+        q.fields = ["name", "clusterUuid"]
     return q
 
 
@@ -69,6 +76,7 @@ def inventory_data():
         maps[hostname] = instance["uuid"]
 
         if instance["state"] == "Destroyed" \
+                or instance["clusterUuid"] != cluster["prod"] \
                 or instance["platform"] != "Linux":
             continue
 
@@ -90,7 +98,7 @@ def inventory_data():
             if service in service_cache:
                 continue
             service_cache[service] = index
-            q = query_app(service=service)
+            q = query_instance_by_tag("app::{}%".format(service))
             tasks.append(client.request_action(q))
             index += 1
 
