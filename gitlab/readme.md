@@ -21,3 +21,4 @@ python diff_jenkins_gitlab_commit.py project-name
 要求
 - 项目必须在 proj 上填写过 repo, repo 必须是 gitlab
 - 项目name 和 jenkins job name 要一致
+- Charlie nx_project 目录下的 client.py
