@@ -184,6 +184,7 @@ class Instance(object):
 
     @config("HostName", not_none=True)
     def hostname(self, name):
+        name = name.strip()
         if len(name) < 2 or len(name) > 30:
             raise ValueError("HostName length should between 2~30.")
         parts = name.split('.')

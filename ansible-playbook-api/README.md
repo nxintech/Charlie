@@ -4,11 +4,24 @@ running ansible playbook programmatically
 
 使用
 ----
+#### api
 playbook_api.py 相同目录下新建 ansible.cfg 文件
 
 human_log.py copy 到 ansible.cfg 中指定的 `callback_plugins` 路径
 
 运行 playbook_api.py 
+
+
+#### api new
+```
+hosts = 'localhost,192.168.0.1'
+
+runner = Runner(hosts)
+runner.set_module_path('/c/my_module')
+runner.set_extra_vars({'key': 'value'})
+rc, result = runner.run('pb.yml')
+print(rc, result)
+```
 
 references
 ------------
