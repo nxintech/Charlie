@@ -1,9 +1,9 @@
 import gitlab
 from urllib.parse import urlparse
-from nx_project.client import Proj
+from nx_project.client import Client
 from jenkinsapi.jenkins import Jenkins
 
-proj = Proj(username='admin', password='')
+proj = Client(username='admin', password='')
 git = gitlab.Gitlab('https://gitlab.nxin.com', private_token='')
 jen = Jenkins('http://jenkins.p.nxin.com', username='nx_admin', password='')
 
@@ -38,8 +38,8 @@ def get_jenkins_project_build_commit(name):
 
 
 def diff_project_jenkins_gitlab_commit(name):
-    j = get_jenkins_project_build_commit('passport-account')
-    g = get_git_project_master_head_commit('passport-account')
+    j = get_jenkins_project_build_commit(name)
+    g = get_git_project_master_head_commit(name)
     print('jenkins job revision: {}'.format(j))
     print('gitlab master commit: {}'.format(g))
 
