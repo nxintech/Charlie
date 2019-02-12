@@ -160,7 +160,7 @@ def tag_filter(data, tag):
 
 def temp_write(data):
     temp = tempfile.NamedTemporaryFile()
-    temp.write(data)
+    temp.write(data.encode())
     temp.seek(0)
     return temp
 
@@ -220,6 +220,7 @@ if __name__ == '__main__':
         subprocess.call(cmd, shell=True)
         old.close()
         new.close()
+        refresh()
 
     if args.list:
         data = data_filter(get_data(), args.expression, args.tag)
