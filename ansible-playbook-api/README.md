@@ -25,6 +25,9 @@ print(rc, result)
 
 references
 ------------
+
+https://docs.ansible.com/ansible/latest/dev_guide/developing_api.html
+
 http://docs.ansible.com/ansible/intro_configuration.html#stdout-callback
 
 https://serversforhackers.com/running-ansible-2-programmatically
